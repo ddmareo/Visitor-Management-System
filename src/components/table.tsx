@@ -70,6 +70,9 @@ const table = () => {
     Visitor[] | Employee[] | Security[] | Users[] | Visit[] | TeamMember[]
   >([]);
   const [loading, setLoading] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -95,6 +98,77 @@ const table = () => {
   const handleEdit = () => {
     router.push("/");
   };
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    setSelectAll(checked);
+
+    if (checked) {
+      const allIds = filterData().map((item: any) => {
+        switch (selectedTable) {
+          case "visitorsdata":
+            return (item as Visitor).visitor_id;
+          case "employeesdata":
+            return (item as Employee).employee_id;
+          case "securitydata":
+            return (item as Security).security_id;
+          case "usersdata":
+            return (item as Users).user_id;
+          case "visitsdata":
+            return (item as Visit).visit_id;
+          case "teammembersdata":
+            return (item as TeamMember).team_member_id;
+          default:
+            return "";
+        }
+      });
+      setSelectedItems(new Set(allIds));
+    } else {
+      setSelectedItems(new Set());
+    }
+  };
+
+  const handleSelectItem = (id: string) => {
+    const newSelectedItems = new Set(selectedItems);
+    if (selectedItems.has(id)) {
+      newSelectedItems.delete(id);
+    } else {
+      newSelectedItems.add(id);
+    }
+    setSelectedItems(newSelectedItems);
+
+    setSelectAll(newSelectedItems.size === filterData().length);
+  };
+
+  const handleDelete = async () => {
+    if (selectedItems.size === 0) {
+      alert("Please select at least one item!");
+      return;
+    }
+
+    if (!confirm("Are you sure you want to delete the selected items?")) return;
+
+    try {
+      await axios.delete(`/api/table/${selectedTable}`, {
+        data: {
+          ids: Array.from(selectedItems),
+        },
+      });
+
+      alert("Delete successful!");
+
+      const { data } = await axios.get(`/api/table/${selectedTable}`);
+      setTableData(data);
+
+      setSelectedItems(new Set());
+      setSelectAll(false);
+    } catch (error) {
+      console.error("Error deleting items", error);
+      alert("Failed to delete items");
+    }
+  };
+
+  const handleAdd = () => {};
 
   const filterData = () => {
     if (!searchTerm) return tableData;
@@ -158,10 +232,27 @@ const table = () => {
   };
 
   const renderTableHeaders = () => {
+    const commonCheckbox = (
+      <th scope="col" className="p-4">
+        <div className="flex items-center">
+          <input
+            id="checkbox-all-search"
+            type="checkbox"
+            checked={selectAll}
+            onChange={handleSelectAll}
+            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+          />
+          <label htmlFor="checkbox-all-search" className="sr-only">
+            checkbox
+          </label>
+        </div>
+      </th>
+    );
     switch (selectedTable) {
       case "visitorsdata":
         return (
           <tr>
+            {commonCheckbox}
             <th scope="col" className="px-6 py-3">
               Name
             </th>
@@ -191,6 +282,7 @@ const table = () => {
       case "employeesdata":
         return (
           <tr>
+            {commonCheckbox}
             <th scope="col" className="px-6 py-3">
               Name
             </th>
@@ -214,6 +306,7 @@ const table = () => {
       case "securitydata":
         return (
           <tr>
+            {commonCheckbox}
             <th scope="col" className="px-6 py-3">
               Security ID
             </th>
@@ -228,6 +321,7 @@ const table = () => {
       case "usersdata":
         return (
           <tr>
+            {commonCheckbox}
             <th scope="col" className="px-6 py-3">
               Username
             </th>
@@ -248,6 +342,7 @@ const table = () => {
       case "visitsdata":
         return (
           <tr>
+            {commonCheckbox}
             <th scope="col" className="px-6 py-3">
               ID
             </th>
@@ -301,6 +396,7 @@ const table = () => {
       case "teammembersdata":
         return (
           <tr>
+            {commonCheckbox}
             <th scope="col" className="px-6 py-3">
               Team Member ID
             </th>
@@ -322,12 +418,47 @@ const table = () => {
 
   const renderTableRows = () => {
     const filteredData = filterData();
+    const commonRowCheckbox = (id: string) => (
+      <td className="w-4 p-4">
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            checked={selectedItems.has(id)}
+            onChange={() => handleSelectItem(id)}
+            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+          />
+          <label className="sr-only">checkbox</label>
+        </div>
+      </td>
+    );
+
+    const editLogo = (
+      <td className="px-6 py-4">
+        <a
+          onClick={handleEdit}
+          className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-5 h-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5l4 4L7 21l-4 1 1-4L16.5 3.5z" />
+          </svg>
+        </a>
+      </td>
+    );
 
     if (selectedTable === "visitorsdata") {
       return (filteredData as Visitor[]).map((visitor) => (
         <tr
           key={visitor.visitor_id}
           className="bg-white border-b dark:bg-gray-800">
+          {commonRowCheckbox(visitor.visitor_id)}
           <td className="px-6 py-4">{visitor.name}</td>
           <td className="px-6 py-4">{visitor.company_institution}</td>
           <td className="px-6 py-4">{visitor.id_number}</td>
@@ -335,13 +466,7 @@ const table = () => {
           <td className="px-6 py-4">{visitor.contact_email}</td>
           <td className="px-6 py-4">{visitor.address}</td>
           <td className="px-6 py-4">{visitor.registration_date}</td>
-          <td className="px-6 py-4 flex justify-center">
-            <a
-              onClick={handleEdit}
-              className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
-              Edit
-            </a>
-          </td>
+          {editLogo}
         </tr>
       ));
     } else if (selectedTable === "employeesdata") {
@@ -349,18 +474,13 @@ const table = () => {
         <tr
           key={employee.employee_id}
           className="bg-white border-b dark:bg-gray-800">
+          {commonRowCheckbox(employee.employee_id)}
           <td className="px-6 py-4">{employee.name}</td>
           <td className="px-6 py-4">{employee.email}</td>
           <td className="px-6 py-4">{employee.phone}</td>
           <td className="px-6 py-4">{employee.department}</td>
           <td className="px-6 py-4">{employee.position}</td>
-          <td className="px-6 py-4 flex justify-center">
-            <a
-              onClick={handleEdit}
-              className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
-              Edit
-            </a>
-          </td>
+          {editLogo}
         </tr>
       ));
     } else if (selectedTable === "securitydata") {
@@ -368,36 +488,27 @@ const table = () => {
         <tr
           key={security.security_id}
           className="bg-white border-b dark:bg-gray-800">
+          {commonRowCheckbox(security.security_id)}
           <td className="px-6 py-4">{security.security_id}</td>
           <td className="px-6 py-4">{security.security_name}</td>
-          <td className="px-6 py-4 flex justify-center">
-            <a
-              onClick={handleEdit}
-              className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
-              Edit
-            </a>
-          </td>
+          {editLogo}
         </tr>
       ));
     } else if (selectedTable === "usersdata") {
       return (filteredData as Users[]).map((user) => (
         <tr key={user.user_id} className="bg-white border-b dark:bg-gray-800">
+          {commonRowCheckbox(user.user_id)}
           <td className="px-6 py-4">{user.username}</td>
           <td className="px-6 py-4">{user.password}</td>
           <td className="px-6 py-4">{user.role}</td>
           <td className="px-6 py-4">{user.employee_id}</td>
-          <td className="px-6 py-4 flex justify-center">
-            <a
-              onClick={handleEdit}
-              className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
-              Edit
-            </a>
-          </td>
+          {editLogo}
         </tr>
       ));
     } else if (selectedTable === "visitsdata") {
       return (filteredData as Visit[]).map((visit) => (
         <tr key={visit.visit_id} className="bg-white border-b dark:bg-gray-800">
+          {commonRowCheckbox(visit.visit_id)}
           <td className="px-6 py-4">{visit.visit_id}</td>
           <td className="px-6 py-4">{visit.visitor_name}</td>
           <td className="px-6 py-4">{visit.employee_name}</td>
@@ -417,13 +528,7 @@ const table = () => {
           <td className="px-6 py-4">{visit.safety_permit}</td>
           <td className="px-6 py-4">{visit.brings_team ? "Yes" : "No"}</td>
           <td className="px-6 py-4">{visit.team_members_quantity}</td>
-          <td className="px-6 py-4 flex justify-center">
-            <a
-              onClick={handleEdit}
-              className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
-              Edit
-            </a>
-          </td>
+          {editLogo}
         </tr>
       ));
     } else if (selectedTable === "teammembersdata") {
@@ -431,16 +536,11 @@ const table = () => {
         <tr
           key={teamMember.team_member_id}
           className="bg-white border-b dark:bg-gray-800">
+          {commonRowCheckbox(teamMember.team_member_id)}
           <td className="px-6 py-4">{teamMember.team_member_id}</td>
           <td className="px-6 py-4">{teamMember.visit_id}</td>
           <td className="px-6 py-4">{teamMember.member_name}</td>
-          <td className="px-6 py-4 flex justify-center">
-            <a
-              onClick={handleEdit}
-              className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
-              Edit
-            </a>
-          </td>
+          {editLogo}
         </tr>
       ));
     } else {
@@ -451,27 +551,61 @@ const table = () => {
   return (
     <div className="mx-16 mb-16">
       <div className="flex flex-col sm:flex-row flex-wrap space-y-4 sm:space-y-0 items-center justify-between pb-4">
-        <div className="relative">
-          <select
-            value={selectedTable}
-            onChange={handleTableChange}
-            className="block p-2 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white">
-            <option value="visitorsdata">Visitor</option>
-            <option value="employeesdata">Employee</option>
-            <option value="securitydata">Security</option>
-            <option value="usersdata">Users</option>
-            <option value="visitsdata">Visit</option>
-            <option value="teammembersdata">Members</option>
-          </select>
+        <div className="flex items-center space-x-1">
+          <div className="relative mr-2.5">
+            <select
+              value={selectedTable}
+              onChange={handleTableChange}
+              className="block p-2 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white">
+              <option value="visitorsdata">Visitor</option>
+              <option value="employeesdata">Employee</option>
+              <option value="securitydata">Security</option>
+              <option value="usersdata">User</option>
+              <option value="visitsdata">Visit</option>
+              <option value="teammembersdata">Member</option>
+            </select>
+          </div>
+          <button
+            onClick={handleAdd}
+            className="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+          <button
+            onClick={handleDelete}
+            className="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="3">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19 7l-1 12a2 2 0 01-2 2H8a2 2 0 01-2-2L5 7m5 0V4a1 1 0 011-1h2a1 1 0 011 1v3m-7 0h10"
+              />
+            </svg>
+          </button>
         </div>
-
         <div className="relative">
           <div className="absolute inset-y-0 left-0 flex items-center ps-3 pointer-events-none">
             <Search className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </div>
           <input
             type="text"
-            className="block p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-80 bg-gray-50"
+            className="block p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-75 bg-gray-50"
             placeholder="Search for items"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
