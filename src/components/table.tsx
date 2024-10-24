@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import AddForm from "./addform";
 
 interface Visitor {
   visitor_id: string;
@@ -62,6 +63,8 @@ interface TeamMember {
   member_name: string;
 }
 
+type FormDataType = Visitor | Employee | Security | Users | Visit | TeamMember;
+
 const table = () => {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
@@ -72,14 +75,26 @@ const table = () => {
   const [loading, setLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
-  const [showAlert, setShowAlert] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         const { data } = await axios.get(`/api/table/${selectedTable}`);
-        setTableData(data);
+        if (selectedTable === "usersdata") {
+          setTableData(data.users);
+        } else {
+          setTableData(data);
+        }
+
+        const hideAddButtonTables = [
+          "visitorsdata",
+          "visitsdata",
+          "teammembersdata",
+        ];
+        setIsVisible(!hideAddButtonTables.includes(selectedTable));
       } catch (error) {
         console.error("Error fetching table data", error);
       } finally {
@@ -93,6 +108,13 @@ const table = () => {
   const handleTableChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedTable(event.target.value);
     setSearchTerm("");
+
+    const hideAddButtonTables = [
+      "visitorsdata",
+      "visitsdata",
+      "teammembersdata",
+    ];
+    setIsVisible(!hideAddButtonTables.includes(event.target.value));
   };
 
   const handleEdit = () => {
@@ -140,9 +162,24 @@ const table = () => {
     setSelectAll(newSelectedItems.size === filterData().length);
   };
 
+  const handleSubmit = async (formData: FormDataType) => {
+    try {
+      await axios.post(`/api/table/${selectedTable}`, formData);
+      const { data } = await axios.get(`/api/table/${selectedTable}`);
+      if (selectedTable === "usersdata") {
+        setTableData(data.users);
+      } else {
+        setTableData(data);
+      }
+    } catch (error) {
+      console.error("Error adding new item:", error);
+      alert("Failed to add new item");
+    }
+  };
+
   const handleDelete = async () => {
     if (selectedItems.size === 0) {
-      alert("Please select at least one item!");
+      alert("Select at least one of the checkboxes!");
       return;
     }
 
@@ -155,11 +192,12 @@ const table = () => {
         },
       });
 
-      alert("Delete successful!");
-
       const { data } = await axios.get(`/api/table/${selectedTable}`);
-      setTableData(data);
-
+      if (selectedTable === "usersdata") {
+        setTableData(data.users);
+      } else {
+        setTableData(data);
+      }
       setSelectedItems(new Set());
       setSelectAll(false);
     } catch (error) {
@@ -168,7 +206,9 @@ const table = () => {
     }
   };
 
-  const handleAdd = () => {};
+  const handleAdd = () => {
+    setIsModalOpen(true);
+  };
 
   const filterData = () => {
     if (!searchTerm) return tableData;
@@ -565,22 +605,24 @@ const table = () => {
               <option value="teammembersdata">Member</option>
             </select>
           </div>
-          <button
-            onClick={handleAdd}
-            className="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </button>
+          {isVisible && (
+            <button
+              onClick={handleAdd}
+              className="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+          )}
           <button
             onClick={handleDelete}
             className="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2">
@@ -625,6 +667,12 @@ const table = () => {
           </table>
         )}
       </div>
+      <AddForm
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        selectedTable={selectedTable}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 };
