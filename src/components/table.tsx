@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import AddForm from "./addform";
+import EditForm from "./editform";
 
 interface Visitor {
   visitor_id: string;
@@ -36,7 +37,7 @@ interface Users {
   username: string;
   password: string;
   role: "admin" | "user" | "security";
-  employee_id?: string | null;
+  employee_name?: string | null;
 }
 
 interface Visit {
@@ -75,6 +76,8 @@ const table = () => {
   const [loading, setLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -115,10 +118,6 @@ const table = () => {
       "teammembersdata",
     ];
     setIsVisible(!hideAddButtonTables.includes(event.target.value));
-  };
-
-  const handleEdit = () => {
-    router.push("/");
   };
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -208,6 +207,52 @@ const table = () => {
 
   const handleAdd = () => {
     setIsModalOpen(true);
+  };
+
+  const handleEdit = (item: any) => {
+    setSelectedItem(item);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (formData: any) => {
+    try {
+      let id;
+      switch (selectedTable) {
+        case "visitorsdata":
+          id = selectedItem.visitor_id;
+          break;
+        case "employeesdata":
+          id = selectedItem.employee_id;
+          break;
+        case "securitydata":
+          id = selectedItem.security_id;
+          break;
+        case "usersdata":
+          id = selectedItem.user_id;
+          break;
+        case "visitsdata":
+          id = selectedItem.visit_id;
+          break;
+        case "teammembersdata":
+          id = selectedItem.team_member_id;
+          break;
+        default:
+          throw new Error("Invalid table selected");
+      }
+
+      await axios.put(`/api/table/${selectedTable}/${id}`, formData);
+      const { data } = await axios.get(`/api/table/${selectedTable}`);
+      if (selectedTable === "usersdata") {
+        setTableData(data.users);
+      } else {
+        setTableData(data);
+      }
+      setIsEditModalOpen(false);
+      setSelectedItem(null);
+    } catch (error) {
+      console.error("Error updating item:", error);
+      alert("Failed to update item");
+    }
   };
 
   const filterData = () => {
@@ -472,11 +517,11 @@ const table = () => {
       </td>
     );
 
-    const editLogo = (
+    const editLogo = (item: any) => (
       <td className="px-6 py-4">
         <a
-          onClick={handleEdit}
-          className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
+          onClick={() => handleEdit(item)}
+          className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer items-center flex justify-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="w-5 h-5"
@@ -505,8 +550,10 @@ const table = () => {
           <td className="px-6 py-4">{visitor.contact_phone}</td>
           <td className="px-6 py-4">{visitor.contact_email}</td>
           <td className="px-6 py-4">{visitor.address}</td>
-          <td className="px-6 py-4">{visitor.registration_date}</td>
-          {editLogo}
+          <td className="px-6 py-4">
+            {new Date(visitor.registration_date).toLocaleDateString("en-GB")}
+          </td>
+          {editLogo(visitor)}
         </tr>
       ));
     } else if (selectedTable === "employeesdata") {
@@ -520,7 +567,7 @@ const table = () => {
           <td className="px-6 py-4">{employee.phone}</td>
           <td className="px-6 py-4">{employee.department}</td>
           <td className="px-6 py-4">{employee.position}</td>
-          {editLogo}
+          {editLogo(employee)}
         </tr>
       ));
     } else if (selectedTable === "securitydata") {
@@ -531,7 +578,7 @@ const table = () => {
           {commonRowCheckbox(security.security_id)}
           <td className="px-6 py-4">{security.security_id}</td>
           <td className="px-6 py-4">{security.security_name}</td>
-          {editLogo}
+          {editLogo(security)}
         </tr>
       ));
     } else if (selectedTable === "usersdata") {
@@ -541,8 +588,8 @@ const table = () => {
           <td className="px-6 py-4">{user.username}</td>
           <td className="px-6 py-4">{user.password}</td>
           <td className="px-6 py-4">{user.role}</td>
-          <td className="px-6 py-4">{user.employee_id}</td>
-          {editLogo}
+          <td className="px-6 py-4">{user.employee_name}</td>
+          {editLogo(user)}
         </tr>
       ));
     } else if (selectedTable === "visitsdata") {
@@ -555,7 +602,7 @@ const table = () => {
           <td className="px-6 py-4">{visit.security_name}</td>
           <td className="px-6 py-4">{visit.visit_category}</td>
           <td className="px-6 py-4">
-            {new Date(visit.entry_date).toLocaleDateString()}
+            {new Date(visit.entry_date).toLocaleDateString("en-GB")}
           </td>
           <td className="px-6 py-4">{visit.entry_method}</td>
           <td className="px-6 py-4">{visit.vehicle_number}</td>
@@ -568,7 +615,7 @@ const table = () => {
           <td className="px-6 py-4">{visit.safety_permit}</td>
           <td className="px-6 py-4">{visit.brings_team ? "Yes" : "No"}</td>
           <td className="px-6 py-4">{visit.team_members_quantity}</td>
-          {editLogo}
+          {editLogo(visit)}
         </tr>
       ));
     } else if (selectedTable === "teammembersdata") {
@@ -580,7 +627,7 @@ const table = () => {
           <td className="px-6 py-4">{teamMember.team_member_id}</td>
           <td className="px-6 py-4">{teamMember.visit_id}</td>
           <td className="px-6 py-4">{teamMember.member_name}</td>
-          {editLogo}
+          {editLogo(teamMember)}
         </tr>
       ));
     } else {
@@ -672,6 +719,16 @@ const table = () => {
         onClose={() => setIsModalOpen(false)}
         selectedTable={selectedTable}
         onSubmit={handleSubmit}
+      />
+      <EditForm
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedItem(null);
+        }}
+        selectedTable={selectedTable}
+        initialData={selectedItem}
+        onSubmit={handleEditSubmit}
       />
     </div>
   );

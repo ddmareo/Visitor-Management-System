@@ -1,26 +1,40 @@
 import { PrismaClient } from "@prisma/client";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { hash } from "bcryptjs";
+import { withAuth } from "@/lib/with-auth";
 
 const prisma = new PrismaClient();
 
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
+  const authResponse = await withAuth(request);
 
-  if (!session || session.user.role !== "admin") {
-    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  if (authResponse instanceof Response) {
+    return authResponse;
   }
 
   try {
-    const tableData = await prisma.users.findMany();
+    const tableData = await prisma.users.findMany({
+      include: {
+        employee: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
 
     const employees = await prisma.employee.findMany({
       select: { employee_id: true, name: true },
     });
 
+    const transformedUsers = tableData.map((user) => ({
+      ...user,
+      employee_name: user.employee?.name || "N/A",
+      employee: undefined,
+    }));
+
     const responseData = {
-      users: tableData,
+      users: transformedUsers,
       employees: employees,
     };
 
@@ -37,10 +51,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
+  const authResponse = await withAuth(request);
 
-  if (!session || session.user.role !== "admin") {
-    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  if (authResponse instanceof Response) {
+    return authResponse;
   }
 
   try {
@@ -53,21 +67,23 @@ export async function POST(request: Request) {
       );
     }
 
+    const hashedPassword = await hash(password, 12);
+
     const newUser = await prisma.users.create({
       data: {
         username,
-        password,
+        password: hashedPassword,
         role,
         employee_id,
       },
     });
 
-    const allUsers = await prisma.users.findMany();
+    const { password: _, ...userWithoutPassword } = newUser;
 
     return NextResponse.json(
       {
         message: "User added successfully",
-        users: allUsers,
+        user: userWithoutPassword,
       },
       { status: 201 }
     );
@@ -81,10 +97,10 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const session = await getServerSession(authOptions);
+  const authResponse = await withAuth(request);
 
-  if (!session || session.user.role !== "admin") {
-    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  if (authResponse instanceof Response) {
+    return authResponse;
   }
 
   try {

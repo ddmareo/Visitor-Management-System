@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
-import { hash } from "bcryptjs";
 import axios from "axios";
 
-interface AddFormProps {
+interface EditFormProps {
   isOpen: boolean;
   onClose: () => void;
   selectedTable: string;
+  initialData: any;
   onSubmit: (data: any) => void;
 }
 
@@ -40,18 +40,10 @@ interface UsersData {
 }
 
 interface VisitsData {
-  visitor_name: string;
-  employee_name: string;
   visit_category: string;
+  entry_date: string;
   entry_method: string;
   vehicle_number?: string;
-  brings_team: string;
-  team_members_quantity?: number;
-}
-
-interface TeamMembersData {
-  visit_id: string;
-  member_name: string;
 }
 
 type FormDataType =
@@ -59,13 +51,13 @@ type FormDataType =
   | EmployeesData
   | SecurityData
   | UsersData
-  | VisitsData
-  | TeamMembersData;
+  | VisitsData;
 
-const AddForm: React.FC<AddFormProps> = ({
+const EditForm: React.FC<EditFormProps> = ({
   isOpen,
   onClose,
   selectedTable,
+  initialData,
   onSubmit,
 }) => {
   type Employee = {
@@ -77,6 +69,12 @@ const AddForm: React.FC<AddFormProps> = ({
   const [employees, setEmployees] = useState<Employee[]>([]);
 
   useEffect(() => {
+    if (isOpen && initialData) {
+      setFormData(initialData);
+    }
+  }, [isOpen, initialData]);
+
+  useEffect(() => {
     if (isOpen && selectedTable === "usersdata") {
       fetchEmployees();
     }
@@ -84,7 +82,7 @@ const AddForm: React.FC<AddFormProps> = ({
 
   const fetchEmployees = async () => {
     try {
-      const response = await axios.get("/api/table/usersdata");
+      const response = await axios.get(`/api/table/${selectedTable}`);
       if (response.data.employees) {
         setEmployees(response.data.employees);
       }
@@ -102,10 +100,6 @@ const AddForm: React.FC<AddFormProps> = ({
       value = parseInt(value, 10) as unknown as string;
     }
 
-    if (name === "password") {
-      value = await hash(value, 12);
-    }
-
     setFormData({
       ...formData,
       [name]: value,
@@ -115,8 +109,6 @@ const AddForm: React.FC<AddFormProps> = ({
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSubmit(formData);
-    setFormData({});
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -137,6 +129,7 @@ const AddForm: React.FC<AddFormProps> = ({
                 type="text"
                 id="name"
                 name="name"
+                value={(formData as VisitorsData)?.name || ""}
                 className={inputClass}
                 onChange={handleChange}
                 required
@@ -150,6 +143,7 @@ const AddForm: React.FC<AddFormProps> = ({
                 type="text"
                 id="company_institution"
                 name="company_institution"
+                value={(formData as VisitorsData)?.company_institution || ""}
                 className={inputClass}
                 onChange={handleChange}
                 required
@@ -163,6 +157,7 @@ const AddForm: React.FC<AddFormProps> = ({
                 type="text"
                 id="id_number"
                 name="id_number"
+                value={(formData as VisitorsData)?.id_number || ""}
                 className={inputClass}
                 onChange={handleChange}
                 required
@@ -176,6 +171,7 @@ const AddForm: React.FC<AddFormProps> = ({
                 type="tel"
                 id="contact_phone"
                 name="contact_phone"
+                value={(formData as VisitorsData)?.contact_phone || ""}
                 className={inputClass}
                 onChange={handleChange}
                 required
@@ -189,6 +185,7 @@ const AddForm: React.FC<AddFormProps> = ({
                 type="email"
                 id="contact_email"
                 name="contact_email"
+                value={(formData as VisitorsData)?.contact_email || ""}
                 className={inputClass}
                 onChange={handleChange}
                 required
@@ -201,6 +198,7 @@ const AddForm: React.FC<AddFormProps> = ({
               <textarea
                 id="address"
                 name="address"
+                value={(formData as VisitorsData)?.address || ""}
                 className={inputClass}
                 onChange={handleChange}
                 required
@@ -220,6 +218,7 @@ const AddForm: React.FC<AddFormProps> = ({
                 type="text"
                 id="name"
                 name="name"
+                value={(formData as EmployeesData)?.name || ""}
                 className={inputClass}
                 onChange={handleChange}
                 required
@@ -233,6 +232,7 @@ const AddForm: React.FC<AddFormProps> = ({
                 type="email"
                 id="email"
                 name="email"
+                value={(formData as EmployeesData)?.email || ""}
                 className={inputClass}
                 onChange={handleChange}
                 required
@@ -246,6 +246,7 @@ const AddForm: React.FC<AddFormProps> = ({
                 type="tel"
                 id="phone"
                 name="phone"
+                value={(formData as EmployeesData)?.phone || ""}
                 className={inputClass}
                 onChange={handleChange}
               />
@@ -258,6 +259,7 @@ const AddForm: React.FC<AddFormProps> = ({
                 type="text"
                 id="department"
                 name="department"
+                value={(formData as EmployeesData)?.department || ""}
                 className={inputClass}
                 onChange={handleChange}
                 required
@@ -271,6 +273,7 @@ const AddForm: React.FC<AddFormProps> = ({
                 type="text"
                 id="position"
                 name="position"
+                value={(formData as EmployeesData)?.position || ""}
                 className={inputClass}
                 onChange={handleChange}
                 required
@@ -289,6 +292,7 @@ const AddForm: React.FC<AddFormProps> = ({
               type="text"
               id="security_name"
               name="security_name"
+              value={(formData as SecurityData)?.security_name || ""}
               className={inputClass}
               onChange={handleChange}
               required
@@ -307,6 +311,7 @@ const AddForm: React.FC<AddFormProps> = ({
                 type="text"
                 id="username"
                 name="username"
+                value={(formData as UsersData)?.username || ""}
                 className={inputClass}
                 onChange={handleChange}
                 required
@@ -320,6 +325,7 @@ const AddForm: React.FC<AddFormProps> = ({
                 type="password"
                 id="password"
                 name="password"
+                value={(formData as UsersData)?.password || ""}
                 className={inputClass}
                 onChange={handleChange}
                 required
@@ -332,6 +338,7 @@ const AddForm: React.FC<AddFormProps> = ({
               <select
                 id="role"
                 name="role"
+                value={(formData as UsersData)?.role || ""}
                 className={inputClass}
                 onChange={handleChange}
                 required>
@@ -348,6 +355,7 @@ const AddForm: React.FC<AddFormProps> = ({
               <select
                 id="employee_id"
                 name="employee_id"
+                value={(formData as UsersData)?.employee_id || ""}
                 className={inputClass}
                 onChange={handleChange}>
                 <option value="">Select employee</option>
@@ -367,38 +375,13 @@ const AddForm: React.FC<AddFormProps> = ({
         return (
           <>
             <div className="mb-4">
-              <label htmlFor="visitor_name" className={labelClass}>
-                Visitor Name
-              </label>
-              <input
-                type="text"
-                id="visitor_name"
-                name="visitor_name"
-                className={inputClass}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <label htmlFor="employee_name" className={labelClass}>
-                Employee Name
-              </label>
-              <input
-                type="text"
-                id="employee_name"
-                name="employee_name"
-                className={inputClass}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="mb-4">
               <label htmlFor="visit_category" className={labelClass}>
                 Visit Category
               </label>
               <select
                 id="visit_category"
                 name="visit_category"
+                value={(formData as VisitsData)?.visit_category || ""}
                 className={inputClass}
                 onChange={handleChange}
                 required>
@@ -409,12 +392,26 @@ const AddForm: React.FC<AddFormProps> = ({
               </select>
             </div>
             <div className="mb-4">
+              <label htmlFor="entry_date" className={labelClass}>
+                Entry Date
+              </label>
+              <input
+                type="date"
+                id="entry_date"
+                name="entry_date"
+                value={(formData as VisitsData)?.entry_date || ""}
+                className={inputClass}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="mb-4">
               <label htmlFor="entry_method" className={labelClass}>
                 Entry Method
               </label>
               <select
                 id="entry_method"
                 name="entry_method"
+                value={(formData as VisitsData)?.entry_method || ""}
                 className={inputClass}
                 onChange={handleChange}
                 required>
@@ -431,67 +428,9 @@ const AddForm: React.FC<AddFormProps> = ({
                 type="text"
                 id="vehicle_number"
                 name="vehicle_number"
+                value={(formData as VisitsData)?.vehicle_number || ""}
                 className={inputClass}
                 onChange={handleChange}
-              />
-            </div>
-            <div className="mb-4">
-              <label htmlFor="brings_team" className={labelClass}>
-                Brings Team
-              </label>
-              <select
-                id="brings_team"
-                name="brings_team"
-                className={inputClass}
-                onChange={handleChange}
-                required>
-                <option value="">Select option</option>
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-              </select>
-            </div>
-            <div className="mb-4">
-              <label htmlFor="team_members_quantity" className={labelClass}>
-                Team Members Quantity
-              </label>
-              <input
-                type="number"
-                id="team_members_quantity"
-                name="team_members_quantity"
-                className={inputClass}
-                onChange={handleChange}
-              />
-            </div>
-          </>
-        );
-
-      case "teammembersdata":
-        return (
-          <>
-            <div className="mb-4">
-              <label htmlFor="visit_id" className={labelClass}>
-                Visit ID
-              </label>
-              <input
-                type="text"
-                id="visit_id"
-                name="visit_id"
-                className={inputClass}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <label htmlFor="member_name" className={labelClass}>
-                Member Name
-              </label>
-              <input
-                type="text"
-                id="member_name"
-                name="member_name"
-                className={inputClass}
-                onChange={handleChange}
-                required
               />
             </div>
           </>
@@ -507,7 +446,7 @@ const AddForm: React.FC<AddFormProps> = ({
       <div className="bg-white rounded-lg p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">
-            Add New{" "}
+            Edit{" "}
             {selectedTable.replace("data", "").charAt(0).toUpperCase() +
               selectedTable.replace("data", "").slice(1)}
           </h2>
@@ -540,7 +479,7 @@ const AddForm: React.FC<AddFormProps> = ({
             <button
               type="submit"
               className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 ">
-              Add Entry
+              Save Changes
             </button>
           </div>
         </form>
@@ -549,4 +488,4 @@ const AddForm: React.FC<AddFormProps> = ({
   );
 };
 
-export default AddForm;
+export default EditForm;
