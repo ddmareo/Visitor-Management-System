@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     const visitor_id = visitorRecord.visitor_id;
 
     const qrCodeUUID = uuidv4();
-    const qrCodeURL = `https://yourdomain.com/visit/${qrCodeUUID}`;
+    const qrCodeURL = `${qrCodeUUID}`;
 
     const newVisit = await prisma.visit.create({
       data: {

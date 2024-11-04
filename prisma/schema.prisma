@@ -21,6 +21,7 @@ model employee {
 model security {
   security_id   Int     @id @default(autoincrement())
   security_name String  @db.VarChar(255)
+  users         users[]
   visit         visit[]
 }
 
@@ -37,7 +38,9 @@ model users {
   password    String         @db.VarChar(255)
   role        user_role_enum
   employee_id Int?
+  security_id Int?
   employee    employee?      @relation(fields: [employee_id], references: [employee_id], onUpdate: NoAction)
+  security    security?      @relation(fields: [security_id], references: [security_id], onUpdate: NoAction)
 }
 
 model visit {

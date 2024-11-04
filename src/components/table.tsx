@@ -38,6 +38,7 @@ interface Users {
   password: string;
   role: "admin" | "user" | "security";
   employee_name?: string | null;
+  security_name?: string | null;
 }
 
 interface Visit {
@@ -420,6 +421,9 @@ const table = () => {
               Employee
             </th>
             <th scope="col" className="px-6 py-3">
+              Security
+            </th>
+            <th scope="col" className="px-6 py-3">
               Action
             </th>
           </tr>
@@ -589,6 +593,7 @@ const table = () => {
           <td className="px-6 py-4">{user.password}</td>
           <td className="px-6 py-4">{user.role}</td>
           <td className="px-6 py-4">{user.employee_name}</td>
+          <td className="px-6 py-4">{user.security_name}</td>
           {editLogo(user)}
         </tr>
       ));

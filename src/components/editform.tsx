@@ -36,7 +36,8 @@ interface UsersData {
   username: string;
   password: string;
   role: string;
-  employee_id: string;
+  employee_id: string | null;
+  security_id: string | null;
 }
 
 interface VisitsData {
@@ -65,8 +66,14 @@ const EditForm: React.FC<EditFormProps> = ({
     name: string;
   };
 
+  type Security = {
+    security_id: number;
+    security_name: string;
+  };
+
   const [formData, setFormData] = useState<Partial<FormDataType>>({});
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [securityPersonnel, setSecurityPersonnel] = useState<Security[]>([]);
 
   useEffect(() => {
     if (isOpen && initialData) {
@@ -77,6 +84,7 @@ const EditForm: React.FC<EditFormProps> = ({
   useEffect(() => {
     if (isOpen && selectedTable === "usersdata") {
       fetchEmployees();
+      fetchSecurityPersonnel();
     }
   }, [isOpen, selectedTable]);
 
@@ -91,12 +99,23 @@ const EditForm: React.FC<EditFormProps> = ({
     }
   };
 
+  const fetchSecurityPersonnel = async () => {
+    try {
+      const response = await axios.get("/api/table/usersdata");
+      if (response.data.security) setSecurityPersonnel(response.data.security);
+    } catch (error) {
+      console.error("Error fetching security personnel:", error);
+    }
+  };
+
   const handleChange = async (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     let { name, value } = e.target;
 
-    if (name === "employee_id" && value) {
+    if ((name === "employee_id" || name === "security_id") && value === "") {
+      value = null as unknown as string;
+    } else if (name === "employee_id" || name === "security_id") {
       value = parseInt(value, 10) as unknown as string;
     }
 
@@ -364,6 +383,26 @@ const EditForm: React.FC<EditFormProps> = ({
                     key={employee.employee_id}
                     value={employee.employee_id}>
                     {employee.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="mb-4">
+              <label htmlFor="security_id" className={labelClass}>
+                Security
+              </label>
+              <select
+                id="security_id"
+                name="security_id"
+                value={(formData as UsersData)?.security_id || ""}
+                className={inputClass}
+                onChange={handleChange}>
+                <option value="">Select security</option>
+                {securityPersonnel.map((security) => (
+                  <option
+                    key={security.security_id}
+                    value={security.security_id}>
+                    {security.security_name}
                   </option>
                 ))}
               </select>

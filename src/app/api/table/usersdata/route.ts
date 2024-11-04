@@ -20,6 +20,11 @@ export async function GET(request: Request) {
             name: true,
           },
         },
+        security: {
+          select: {
+            security_name: true,
+          },
+        },
       },
     });
 
@@ -27,15 +32,22 @@ export async function GET(request: Request) {
       select: { employee_id: true, name: true },
     });
 
+    const security = await prisma.security.findMany({
+      select: { security_id: true, security_name: true },
+    });
+
     const transformedUsers = tableData.map((user) => ({
       ...user,
       employee_name: user.employee?.name || "N/A",
+      security_name: user.security?.security_name || "N/A",
       employee: undefined,
+      security: undefined,
     }));
 
     const responseData = {
       users: transformedUsers,
       employees: employees,
+      security: security,
     };
 
     return new Response(JSON.stringify(responseData), {
@@ -58,9 +70,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { username, password, role, employee_id } = await request.json();
+    const { username, password, role, employee_id, security_id } =
+      await request.json();
 
-    if (!username || !password || !role || !employee_id) {
+    if (!username || !password || !role) {
       return NextResponse.json(
         { message: "Missing required fields" },
         { status: 400 }
@@ -75,6 +88,7 @@ export async function POST(request: Request) {
         password: hashedPassword,
         role,
         employee_id,
+        security_id,
       },
     });
 

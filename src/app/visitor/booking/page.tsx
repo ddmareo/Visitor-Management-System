@@ -143,8 +143,8 @@ const page = () => {
 
   return (
     <div>
-      <div className="mt-8 flex justify-center items-center">
-        <div className="bg-white dark:bg-gray-800 p-10 rounded-lg shadow-md w-full max-w-xl h-[750px] overflow-y-auto">
+      <div className="mt-8 mb-5 flex justify-center items-center">
+        <div className="bg-white dark:bg-gray-800 p-10 rounded-lg shadow-md w-full max-w-lg h-[750px] overflow-y-auto">
           <form onSubmit={handleSubmit}>
             <div className="flex mb-5 space-x-2">
               <div className="w-full">

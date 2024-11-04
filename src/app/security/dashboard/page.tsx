@@ -1,6 +1,8 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import QRScanner from "@/components/qrscanner";
+import VisitForm from "@/components/visitform";
 
 const page = async () => {
   const session = await getServerSession(authOptions);
@@ -10,8 +12,10 @@ const page = async () => {
   }
 
   return (
-    <div className="mt-5 font-bold text-3xl ml-5">
-      <h1>Welcome back, Security!</h1>
+    <div>
+      <div className="flex justify-center items-center mt-9">
+        <VisitForm />
+      </div>
     </div>
   );
 };

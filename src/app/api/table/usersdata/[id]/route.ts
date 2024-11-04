@@ -18,8 +18,21 @@ export async function PUT(
   try {
     const data = await req.json();
 
-    const hashedPassword = data.password
-      ? await hash(data.password, 12)
+    //To fix the hashed password getting hashed, so the code matches the existing password first with the new password
+    const existingUser = await prisma.users.findUnique({
+      where: {
+        user_id: parseInt(params.id, 10),
+      },
+    });
+
+    if (!existingUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const passwordToUpdate = data.password
+      ? data.password !== existingUser.password
+        ? await hash(data.password, 12)
+        : data.password
       : undefined;
 
     const updatedUser = await prisma.users.update({
@@ -28,9 +41,10 @@ export async function PUT(
       },
       data: {
         username: data.username,
-        password: hashedPassword ? hashedPassword : undefined,
+        password: passwordToUpdate,
         role: data.role,
         employee_id: data.employee_id,
+        security_id: data.security_id,
       },
     });
 
