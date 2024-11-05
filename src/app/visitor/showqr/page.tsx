@@ -11,7 +11,7 @@ const page = () => {
   return (
     <div>
       <div className="mt-40 flex justify-center items-center">
-        <div className="bg-white dark:bg-gray-800 p-10 rounded-lg shadow-md w-full max-w-xl">
+        <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-xl">
           <h1 className="text-2xl font-semibold mb-4 text-center">
             Your visit has been booked successfully!
           </h1>

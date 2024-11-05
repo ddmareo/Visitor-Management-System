@@ -611,8 +611,24 @@ const table = () => {
           </td>
           <td className="px-6 py-4">{visit.entry_method}</td>
           <td className="px-6 py-4">{visit.vehicle_number}</td>
-          <td className="px-6 py-4">{visit.check_in_time}</td>
-          <td className="px-6 py-4">{visit.check_out_time}</td>
+          <td className="px-6 py-4">
+            {visit.check_in_time
+              ? new Date(visit.check_in_time).toLocaleTimeString("en-US", {
+                  hour12: false,
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "-"}
+          </td>
+          <td className="px-6 py-4">
+            {visit.check_out_time
+              ? new Date(visit.check_out_time).toLocaleTimeString("en-US", {
+                  hour12: false,
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "-"}
+          </td>
           <td className="px-6 py-4">{visit.qr_code}</td>
           <td className="px-6 py-4">
             {visit.verification_status ? "Verified" : "Not Verified"}

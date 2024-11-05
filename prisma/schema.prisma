@@ -74,6 +74,7 @@ model visitor {
   contact_email       String    @db.VarChar(100)
   address             String
   registration_date   DateTime? @default(now()) @db.Timestamp(6)
+  id_card             Bytes?
   visit               visit[]
 }
 

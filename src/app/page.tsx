@@ -40,7 +40,7 @@ export default function Home() {
   return (
     <div>
       <div className="mt-60 flex justify-center items-center">
-        <div className="bg-white dark:bg-gray-800 p-10 rounded-lg shadow-md w-full max-w-sm">
+        <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-sm">
           <form onSubmit={handleSubmit}>
             <div className="mb-1">
               <label

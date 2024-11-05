@@ -3,22 +3,100 @@
 import React, { useState } from "react";
 import { QrCode, Search } from "lucide-react";
 import QrScannerPopup from "./qrscannerwindow";
+import axios from "axios";
+
+interface VisitsData {
+  visit_id: string;
+  visitor_name: string;
+  company_institution: string;
+  employee_name: string;
+  security_name?: string;
+  id_card?: string;
+  entry_date: string;
+  check_in_time: string;
+  check_out_time: string;
+  visit_category: string;
+  safety_permit?: string;
+  entry_method: string;
+  vehicle_number?: string;
+  verification_status: boolean;
+  brings_team: boolean;
+  team_members_quantity?: number;
+  team_members?: string;
+}
 
 const page = () => {
   const [qrCode, setQrCode] = useState("");
   const [showQrScanner, setShowQrScanner] = useState(false);
+  const [visitsData, setVisitsData] = useState<VisitsData | null>(null);
+  const [error, setError] = useState("");
+  const [isCheckinIn, setIsCheckingIn] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   const handleQrScanSuccess = (scannedUrl: string) => {
     setQrCode(scannedUrl);
     setShowQrScanner(false);
+    fetchVisitsData(scannedUrl);
   };
+
+  const fetchVisitsData = async (qrCode: string) => {
+    setError("");
+    try {
+      const res = await axios.get<VisitsData>(`/api/visits/${qrCode}`);
+      setVisitsData(res.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+      setVisitsData(null);
+    }
+  };
+
+  const handleSearch = () => {
+    if (qrCode) {
+      fetchVisitsData(qrCode);
+    } else {
+      setError("Please enter a QR code");
+    }
+  };
+
+  const handleCheckIn = async () => {
+    if (!visitsData?.visit_id) return;
+
+    setIsCheckingIn(true);
+    setError("");
+
+    try {
+      await axios.put(`/api/visits/checkin/${visitsData.visit_id}`);
+      await fetchVisitsData(qrCode);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Check-in failed");
+    } finally {
+      setIsCheckingIn(false);
+    }
+  };
+
+  const handleCheckOut = async () => {
+    if (!visitsData?.visit_id) return;
+
+    setIsCheckingOut(true);
+    setError("");
+
+    try {
+      await axios.put(`/api/visits/checkout/${visitsData.visit_id}`);
+      await fetchVisitsData(qrCode);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Check-out failed");
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
   return (
     <div className="my-8 w-full md:w-2/3 lg:w-1/3 px-4">
-      <form>
-        <div className="mb-4">
+      <form className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+        <div>
           <label
             htmlFor="qr_code"
-            className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+            className="block mb-2 text-sm font-medium text-gray-700">
             QR Code
           </label>
           <div className="flex flex-col sm:flex-row">
@@ -34,7 +112,8 @@ const page = () => {
             <button
               className="mt-2 sm:mt-0 sm:ml-3 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-black rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 active:bg-gray-900"
               aria-label="Search"
-              type="button">
+              type="button"
+              onClick={handleSearch}>
               <Search className="w-5 h-5" />
               <span className="sr-only">Search</span>
             </button>
@@ -49,78 +128,191 @@ const page = () => {
           </div>
         </div>
       </form>
-      <div className="p-6 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 mt-10">
-        <h5 className="mb-5 text-2xl font-bold tracking-tight text-gray-900 dark:text-white text-center">
-          ALVA VISIT CARD
-        </h5>
-        <div className="flex flex-col lg:flex-row lg:space-x-16 space-y-6 lg:space-y-0 px-5">
-          <div>
-            <h2 className="mb-1 text-base font-semibold tracking-tight text-gray-900 dark:text-white">
-              BASIC INFORMATION
-            </h2>
-            <p className="font-normal text-gray-700 dark:text-gray-400">
-              Name: Dustin Mareo Istanto
-            </p>
-            <p className="font-normal text-gray-700 dark:text-gray-400">
-              Company: President University
-            </p>
-            <p className="font-normal text-gray-700 dark:text-gray-400">
-              Employee: John Doe
-            </p>
-            <p className="font-normal text-gray-700 dark:text-gray-400">
-              Security: -
-            </p>
-            <p className="font-normal text-gray-700 dark:text-gray-400">
-              ID Card: okokok.png
-            </p>
-            <h2 className="mb-1 mt-3.5 text-base font-semibold tracking-tight text-gray-900 dark:text-white">
-              VISIT INFORMATION
-            </h2>
-            <p className="font-normal text-gray-700 dark:text-gray-400">
-              Entry Date: 22-10-2024
-            </p>
-            <p className="font-normal text-gray-700 dark:text-gray-400">
-              Check-In Time: 10:20
-            </p>
-            <p className="font-normal text-gray-700 dark:text-gray-400">
-              Check-Out Time: 16:00
-            </p>
+
+      {error && <p className="text-red-500">{error}</p>}
+
+      {visitsData && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h5 className="text-xl font-semibold text-gray-900">Visit Card</h5>
           </div>
-          <div>
-            <h2 className="mb-1 text-base font-semibold tracking-tight text-gray-900 dark:text-white">
-              OTHER INFORMATION
-            </h2>
-            <p className="font-normal text-gray-700 dark:text-gray-400">
-              Visit Category: High Risk Work
-            </p>
-            <p className="font-normal text-gray-700 dark:text-gray-400">
-              Safety Permit: safety_dustin.png
-            </p>
-            <p className="font-normal text-gray-700 dark:text-gray-400">
-              Entry Method: Vehicle
-            </p>
-            <p className="font-normal text-gray-700 dark:text-gray-400">
-              Vehicle Number: B 2416 JOK
-            </p>
-            <p className="font-normal text-gray-700 dark:text-gray-400">
-              Verification Status: No
-            </p>
-            <p className="font-normal text-gray-700 dark:text-gray-400">
-              Brings Team: No
-            </p>
-            <p className="font-normal text-gray-700 dark:text-gray-400">
-              Team Members: -
-            </p>
+
+          <div className="p-6">
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                    Basic Information
+                  </h2>
+                  <dl className="space-y-2">
+                    {[
+                      ["Name", visitsData.visitor_name],
+                      ["Company", visitsData.company_institution],
+                      ["Employee", visitsData.employee_name],
+                      ["Security", visitsData.security_name || "-"],
+                      ["ID Card", visitsData.id_card || "-"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex justify-between">
+                        <dt className="text-sm text-gray-600">{label}</dt>
+                        <dd className="text-sm font-medium text-gray-900">
+                          {value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+
+                <div>
+                  <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                    Visit Time
+                  </h2>
+                  <dl className="space-y-2">
+                    {[
+                      [
+                        "Entry Date",
+                        new Date(visitsData.entry_date).toLocaleDateString(
+                          "en-GB"
+                        ),
+                      ],
+                      [
+                        "Check-In",
+                        visitsData.check_in_time
+                          ? new Date(
+                              visitsData.check_in_time
+                            ).toLocaleTimeString("en-US", {
+                              hour12: false,
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "-",
+                      ],
+                      [
+                        "Check-Out",
+                        visitsData.check_out_time
+                          ? new Date(
+                              visitsData.check_out_time
+                            ).toLocaleTimeString("en-US", {
+                              hour12: false,
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "-",
+                      ],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex justify-between">
+                        <dt className="text-sm text-gray-600">{label}</dt>
+                        <dd className="text-sm font-medium text-gray-900">
+                          {value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                    Visit Information
+                  </h2>
+                  <dl className="space-y-2">
+                    {[
+                      ["Visit Category", visitsData.visit_category],
+                      ["Safety Permit", visitsData.safety_permit || "-"],
+                      ["Entry Method", visitsData.entry_method],
+                      ["Vehicle Number", visitsData.vehicle_number || "-"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex justify-between">
+                        <dt className="text-sm text-gray-600">{label}</dt>
+                        <dd className="text-sm font-medium text-gray-900">
+                          {value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+
+                <div>
+                  <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                    Other Information
+                  </h2>
+                  <dl className="space-y-2">
+                    {[
+                      [
+                        "Verification Status",
+                        visitsData.verification_status ? "Yes" : "No",
+                      ],
+                      ["Brings Team", visitsData.brings_team ? "Yes" : "No"],
+                      [
+                        "Team Members Quantity",
+                        visitsData.team_members_quantity || "-",
+                      ],
+                      [
+                        "Team Members",
+                        Array.isArray(visitsData.team_members) &&
+                        visitsData.team_members.length > 0 ? (
+                          visitsData.team_members.length === 1 ? (
+                            visitsData.team_members[0]
+                          ) : (
+                            <ul className="list-disc pl-5 space-y-1">
+                              {visitsData.team_members.map((member, index) => (
+                                <li
+                                  key={index}
+                                  className="text-sm font-medium text-gray-900">
+                                  {member}
+                                </li>
+                              ))}
+                            </ul>
+                          )
+                        ) : (
+                          "-"
+                        ),
+                      ],
+                    ].map(([label, value]) => (
+                      <div
+                        key={label as string}
+                        className="flex justify-between">
+                        <dt className="text-sm text-gray-600">{label}</dt>
+                        <dd className="text-sm font-medium text-gray-900">
+                          {value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+            <div className="flex justify-end">
+              {!(visitsData.check_in_time && visitsData.check_out_time) && (
+                <button
+                  className={`inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
+                    isCheckinIn || isCheckingOut
+                      ? "opacity-50 cursor-not-allowed"
+                      : visitsData.check_in_time
+                      ? "bg-red-500 hover:bg-red-600 focus:ring-red-500"
+                      : "bg-green-500 hover:bg-green-600 focus:ring-green-500"
+                  }`}
+                  onClick={
+                    visitsData.check_in_time ? handleCheckOut : handleCheckIn
+                  }
+                  disabled={isCheckinIn || isCheckingOut}>
+                  {isCheckinIn
+                    ? "Checking In..."
+                    : isCheckingOut
+                    ? "Checking Out..."
+                    : visitsData.check_in_time
+                    ? "Check Out"
+                    : "Check In"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
-        <div className="flex justify-center mt-6">
-          <a
-            href="#"
-            className="inline-flex items-center px-5 py-3 text-white bg-black rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500">
-            Check In
-          </a>
-        </div>
-      </div>
+      )}
+
       {showQrScanner && (
         <QrScannerPopup
           onClose={() => setShowQrScanner(false)}
