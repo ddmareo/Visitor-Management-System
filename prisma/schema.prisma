@@ -49,16 +49,17 @@ model visit {
   employee_id           Int?
   security_id           Int?
   visit_category        visit_category_enum
-  entry_date            DateTime            @db.Date
   entry_method          entry_method_enum
   vehicle_number        String?             @db.VarChar(20)
   check_in_time         DateTime?           @db.Timestamp(6)
   check_out_time        DateTime?           @db.Timestamp(6)
   qr_code               String?             @db.VarChar(255)
   verification_status   Boolean?            @default(false)
-  safety_permit         String?             @db.VarChar(255)
+  safety_permit         Bytes?
   brings_team           Boolean?            @default(false)
   team_members_quantity Int?
+  entry_start_date      DateTime            @db.Date
+  entry_end_date        DateTime            @db.Date
   teammember            teammember[]
   employee              employee?           @relation(fields: [employee_id], references: [employee_id], onUpdate: NoAction)
   security              security?           @relation(fields: [security_id], references: [security_id], onUpdate: NoAction)

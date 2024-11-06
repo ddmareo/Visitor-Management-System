@@ -1,7 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import QRScanner from "@/components/qrscanner";
 import VisitForm from "@/components/visitform";
 
 const page = async () => {

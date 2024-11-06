@@ -10,6 +10,7 @@ const page = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -25,14 +26,42 @@ const page = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        setError("File size must be less than 5MB");
+        return;
+      }
+      setSelectedFile(file);
+      setError(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!selectedFile) {
+      setError("Please select an ID card file");
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await axios.post("/api/register", formData);
+      const submitFormData = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        submitFormData.append(key, value);
+      });
+      submitFormData.append("idCard", selectedFile);
+
+      const response = await axios.post("/api/register", submitFormData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
       console.log("Registration successful:", response.data);
       router.push(`/visitor/booking?nik=${formData.nomorktp}`);
     } catch (error: any) {
@@ -158,10 +187,14 @@ const page = () => {
               <input
                 type="file"
                 id="file"
-                accept=".pdf, .png, .jpg, .jpeg"
+                onChange={handleFileChange}
+                accept="image/*"
                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                 required
               />
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Supported formats: JPG, PNG (Max. 5MB)
+              </p>
             </div>
             <div className="flex justify-center items-center mt-8">
               <button

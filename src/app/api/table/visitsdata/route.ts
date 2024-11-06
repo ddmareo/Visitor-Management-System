@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   try {
     const visits = await prisma.visit.findMany({
       orderBy: {
-        entry_date: "desc",
+        entry_start_date: "desc",
       },
 
       include: {

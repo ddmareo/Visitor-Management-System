@@ -12,7 +12,8 @@ interface VisitsData {
   employee_name: string;
   security_name?: string;
   id_card?: string;
-  entry_date: string;
+  entry_start_date: string;
+  entry_end_date: string;
   check_in_time: string;
   check_out_time: string;
   visit_category: string;
@@ -169,8 +170,14 @@ const page = () => {
                   <dl className="space-y-2">
                     {[
                       [
-                        "Entry Date",
-                        new Date(visitsData.entry_date).toLocaleDateString(
+                        "Entry Start Date",
+                        new Date(
+                          visitsData.entry_start_date
+                        ).toLocaleDateString("en-GB"),
+                      ],
+                      [
+                        "Entry End Date",
+                        new Date(visitsData.entry_end_date).toLocaleDateString(
                           "en-GB"
                         ),
                       ],

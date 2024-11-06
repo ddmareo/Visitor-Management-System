@@ -5,15 +5,33 @@ const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
   try {
-    const { name, company, nomorktp, phone, email, address } =
-      await request.json();
+    const formData = await request.formData();
 
-    if (!name || !company || !nomorktp || !phone || !email || !address) {
+    const idCardFile = formData.get("idCard") as File;
+    const name = formData.get("name") as string;
+    const company = formData.get("company") as string;
+    const nomorktp = formData.get("nomorktp") as string;
+    const phone = formData.get("phone") as string;
+    const email = formData.get("email") as string;
+    const address = formData.get("address") as string;
+
+    if (
+      !name ||
+      !company ||
+      !nomorktp ||
+      !phone ||
+      !email ||
+      !address ||
+      !idCardFile
+    ) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
+
+    const fileArrayBuffer = await idCardFile.arrayBuffer();
+    const fileBuffer = Buffer.from(fileArrayBuffer);
 
     const existingVisitor = await prisma.visitor.findUnique({
       where: { id_number: nomorktp },
@@ -34,6 +52,7 @@ export async function POST(request: Request) {
         contact_phone: phone,
         contact_email: email,
         address,
+        id_card: fileBuffer,
       },
     });
 
@@ -43,6 +62,15 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error("Error during registration:", error);
-    return NextResponse.json({ error: "An error occurred" }, { status: 500 });
+    return NextResponse.json(
+      { error: "An error occurred during registration" },
+      { status: 500 }
+    );
   }
 }
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};

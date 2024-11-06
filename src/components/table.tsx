@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search } from "lucide-react";
+import { Search, Eye, Edit } from "lucide-react";
 import axios from "axios";
-import { useRouter } from "next/navigation";
 import AddForm from "./addform";
 import EditForm from "./editform";
 
@@ -16,6 +15,7 @@ interface Visitor {
   contact_email: string;
   address: string;
   registration_date: string;
+  id_card: string;
 }
 
 interface Employee {
@@ -47,7 +47,8 @@ interface Visit {
   employee_name?: string;
   security_name?: string;
   visit_category: "meeting" | "low_risk_work" | "high_risk_work";
-  entry_date: string;
+  entry_start_date: string;
+  entry_end_date: string;
   entry_method: "walking" | "vehicle";
   vehicle_number?: string | null;
   check_in_time?: string | null;
@@ -68,7 +69,6 @@ interface TeamMember {
 type FormDataType = Visitor | Employee | Security | Users | Visit | TeamMember;
 
 const table = () => {
-  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTable, setSelectedTable] = useState("visitorsdata");
   const [tableData, setTableData] = useState<
@@ -160,6 +160,80 @@ const table = () => {
     setSelectedItems(newSelectedItems);
 
     setSelectAll(newSelectedItems.size === filterData().length);
+  };
+
+  const openIdCard = async (visitorId: string) => {
+    try {
+      const response = await axios.get(
+        `/api/table/visitorsdata/idcard/${visitorId}`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob([response.data], {
+        type: response.headers["content-type"],
+      });
+      const imageUrl = URL.createObjectURL(blob);
+
+      const newWindow = window.open("", "_blank");
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head>
+              <title>ID Card</title>
+              <style>
+                body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f0f0; }
+                img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+              </style>
+            </head>
+            <body>
+              <img src="${imageUrl}" alt="ID Card" />
+            </body>
+          </html>
+        `);
+      }
+    } catch (error) {
+      console.error("Error fetching ID card:", error);
+      alert("Failed to load ID Card image");
+    }
+  };
+
+  const openSafetyPermit = async (visitId: string) => {
+    try {
+      const response = await axios.get(
+        `/api/table/visitsdata/safety/${visitId}`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob([response.data], {
+        type: response.headers["content-type"],
+      });
+      const imageUrl = URL.createObjectURL(blob);
+
+      const newWindow = window.open("", "_blank");
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head>
+              <title>ID Card</title>
+              <style>
+                body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f0f0; }
+                img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+              </style>
+            </head>
+            <body>
+              <img src="${imageUrl}" alt="ID Card" />
+            </body>
+          </html>
+        `);
+      }
+    } catch (error) {
+      console.error("Error fetching safety permit:", error);
+      alert("Failed to load safety permit image");
+    }
   };
 
   const handleSubmit = async (formData: FormDataType) => {
@@ -448,7 +522,10 @@ const table = () => {
               Visit Category
             </th>
             <th scope="col" className="px-6 py-3">
-              Entry Date
+              Entry Start Date
+            </th>
+            <th scope="col" className="px-6 py-3">
+              Entry End Date
             </th>
             <th scope="col" className="px-6 py-3">
               Entry Method
@@ -467,9 +544,6 @@ const table = () => {
             </th>
             <th scope="col" className="px-6 py-3">
               Verification Status
-            </th>
-            <th scope="col" className="px-6 py-3">
-              Safety Permit
             </th>
             <th scope="col" className="px-6 py-3">
               Brings Team
@@ -521,24 +595,29 @@ const table = () => {
       </td>
     );
 
-    const editLogo = (item: any) => (
+    const actionLogo = (item: any) => (
       <td className="px-6 py-4">
-        <a
-          onClick={() => handleEdit(item)}
-          className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer items-center flex justify-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round">
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5l4 4L7 21l-4 1 1-4L16.5 3.5z" />
-          </svg>
-        </a>
+        <div className="flex justify-center items-center space-x-4">
+          <a
+            onClick={() => handleEdit(item)}
+            className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
+            <Edit className="w-5 h-5" />
+          </a>
+          {selectedTable === "visitorsdata" && (
+            <a
+              onClick={() => openIdCard(item.visitor_id)}
+              className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
+              <Eye className="w-5 h-5" />
+            </a>
+          )}
+          {selectedTable === "visitsdata" && (
+            <a
+              onClick={() => openSafetyPermit(item.visit_id)}
+              className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
+              <Eye className="w-5 h-5" />
+            </a>
+          )}
+        </div>
       </td>
     );
 
@@ -557,7 +636,7 @@ const table = () => {
           <td className="px-6 py-4">
             {new Date(visitor.registration_date).toLocaleDateString("en-GB")}
           </td>
-          {editLogo(visitor)}
+          {actionLogo(visitor)}
         </tr>
       ));
     } else if (selectedTable === "employeesdata") {
@@ -571,7 +650,7 @@ const table = () => {
           <td className="px-6 py-4">{employee.phone}</td>
           <td className="px-6 py-4">{employee.department}</td>
           <td className="px-6 py-4">{employee.position}</td>
-          {editLogo(employee)}
+          {actionLogo(employee)}
         </tr>
       ));
     } else if (selectedTable === "securitydata") {
@@ -582,7 +661,7 @@ const table = () => {
           {commonRowCheckbox(security.security_id)}
           <td className="px-6 py-4">{security.security_id}</td>
           <td className="px-6 py-4">{security.security_name}</td>
-          {editLogo(security)}
+          {actionLogo(security)}
         </tr>
       ));
     } else if (selectedTable === "usersdata") {
@@ -594,7 +673,7 @@ const table = () => {
           <td className="px-6 py-4">{user.role}</td>
           <td className="px-6 py-4">{user.employee_name}</td>
           <td className="px-6 py-4">{user.security_name}</td>
-          {editLogo(user)}
+          {actionLogo(user)}
         </tr>
       ));
     } else if (selectedTable === "visitsdata") {
@@ -607,7 +686,10 @@ const table = () => {
           <td className="px-6 py-4">{visit.security_name}</td>
           <td className="px-6 py-4">{visit.visit_category}</td>
           <td className="px-6 py-4">
-            {new Date(visit.entry_date).toLocaleDateString("en-GB")}
+            {new Date(visit.entry_start_date).toLocaleDateString("en-GB")}
+          </td>
+          <td className="px-6 py-4">
+            {new Date(visit.entry_end_date).toLocaleDateString("en-GB")}
           </td>
           <td className="px-6 py-4">{visit.entry_method}</td>
           <td className="px-6 py-4">{visit.vehicle_number}</td>
@@ -633,10 +715,9 @@ const table = () => {
           <td className="px-6 py-4">
             {visit.verification_status ? "Verified" : "Not Verified"}
           </td>
-          <td className="px-6 py-4">{visit.safety_permit}</td>
           <td className="px-6 py-4">{visit.brings_team ? "Yes" : "No"}</td>
           <td className="px-6 py-4">{visit.team_members_quantity}</td>
-          {editLogo(visit)}
+          {actionLogo(visit)}
         </tr>
       ));
     } else if (selectedTable === "teammembersdata") {
@@ -648,7 +729,7 @@ const table = () => {
           <td className="px-6 py-4">{teamMember.team_member_id}</td>
           <td className="px-6 py-4">{teamMember.visit_id}</td>
           <td className="px-6 py-4">{teamMember.member_name}</td>
-          {editLogo(teamMember)}
+          {actionLogo(teamMember)}
         </tr>
       ));
     } else {
