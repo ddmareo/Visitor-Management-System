@@ -29,6 +29,7 @@ export async function GET(
       include: {
         visitor: {
           select: {
+            id_card: true,
             name: true,
             company_institution: true,
           },
@@ -61,6 +62,7 @@ export async function GET(
     // Transform the visit data to match the expected format
     const transformedVisit = {
       ...visit,
+      id_card: visit.visitor?.id_card,
       visitor_name: visit.visitor?.name || "-",
       employee_name: visit.employee?.name || "-",
       security_name: visit.security?.security_name || "-",

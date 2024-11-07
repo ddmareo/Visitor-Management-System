@@ -39,7 +39,6 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
 
-    // Extract fields from form data
     const visitor = formData.get("visitor") as string;
     const employee = parseInt(formData.get("employee") as string);
     const entry_start_date = new Date(
@@ -56,7 +55,12 @@ export async function POST(request: Request) {
 
     const safetyPermitFile = formData.get("safety_permit") as File | null;
 
-    // Validate required fields
+    let teammembers: string[] = [];
+    const teammembersData = formData.get("teammembers");
+    if (teammembersData) {
+      teammembers = JSON.parse(teammembersData as string);
+    }
+
     if (
       !employee ||
       !entry_start_date ||
@@ -70,7 +74,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check safety permit for high-risk work
     let safetyPermitBuffer: Buffer | null = null;
     if (category === "high_risk_work") {
       if (!safetyPermitFile) {
@@ -90,10 +93,10 @@ export async function POST(request: Request) {
         );
       }
 
-      const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
+      const allowedTypes = ["image/jpeg", "image/png"];
       if (!allowedTypes.includes(safetyPermitFile.type)) {
         return NextResponse.json(
-          { error: "Only PDF, JPEG, and PNG files are allowed" },
+          { error: "Only JPEG and PNG files are allowed" },
           { status: 400 }
         );
       }
@@ -112,7 +115,6 @@ export async function POST(request: Request) {
     const qrCodeUUID = uuidv4();
     const qrCodeURL = `${qrCodeUUID}`;
 
-    // Create visit record
     const newVisit = await prisma.visit.create({
       data: {
         visitor_id,
@@ -131,10 +133,8 @@ export async function POST(request: Request) {
 
     const qrCodeDataURL = await QRCode.toDataURL(qrCodeURL);
 
-    // Handle team members if they exist
-    const teammembers = formData.getAll("teammembers") as string[];
-    if (brings_team && teammemberscount > 0 && teammembers.length) {
-      const teamData = teammembers.map((member) => ({
+    if (brings_team && teammembers.length > 0) {
+      const teamData = teammembers.map((member: string) => ({
         visit_id: newVisit.visit_id,
         member_name: member,
       }));

@@ -218,14 +218,14 @@ const table = () => {
         newWindow.document.write(`
           <html>
             <head>
-              <title>ID Card</title>
+              <title>Safety Permit</title>
               <style>
                 body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f0f0; }
                 img { max-width: 100%; max-height: 100vh; object-fit: contain; }
               </style>
             </head>
             <body>
-              <img src="${imageUrl}" alt="ID Card" />
+              <img src="${imageUrl}" alt="Safety Permit" />
             </body>
           </html>
         `);

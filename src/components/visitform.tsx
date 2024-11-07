@@ -7,6 +7,7 @@ import axios from "axios";
 
 interface VisitsData {
   visit_id: string;
+  visitor_id: string;
   visitor_name: string;
   company_institution: string;
   employee_name: string;
@@ -91,6 +92,83 @@ const page = () => {
     }
   };
 
+  const openIdCard = async () => {
+    if (!visitsData?.visitor_id) return;
+    try {
+      const response = await axios.get(
+        `/api/table/visitorsdata/idcard/${visitsData.visitor_id}`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob([response.data], {
+        type: response.headers["content-type"],
+      });
+      const imageUrl = URL.createObjectURL(blob);
+
+      const newWindow = window.open("", "_blank");
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head>
+              <title>ID Card</title>
+              <style>
+                body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f0f0; }
+                img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+              </style>
+            </head>
+            <body>
+              <img src="${imageUrl}" alt="ID Card" />
+            </body>
+          </html>
+        `);
+      }
+    } catch (error) {
+      console.error("Error fetching ID card:", error);
+      alert("Failed to load ID Card image");
+    }
+  };
+
+  const openSafetyPermit = async () => {
+    if (!visitsData?.visit_id) return;
+
+    try {
+      const response = await axios.get(
+        `/api/table/visitsdata/safety/${visitsData.visit_id}`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob([response.data], {
+        type: response.headers["content-type"],
+      });
+      const imageUrl = URL.createObjectURL(blob);
+
+      const newWindow = window.open("", "_blank");
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head>
+              <title>Safety Permit</title>
+              <style>
+                body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f0f0; }
+                img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+              </style>
+            </head>
+            <body>
+              <img src="${imageUrl}" alt="Safety Permit" />
+            </body>
+          </html>
+        `);
+      }
+    } catch (error) {
+      console.error("Error fetching safety permit:", error);
+      alert("Failed to load safety permit image");
+    }
+  };
+
   return (
     <div className="my-8 w-full md:w-2/3 lg:w-1/3 px-4">
       <form className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
@@ -151,9 +229,22 @@ const page = () => {
                       ["Company", visitsData.company_institution],
                       ["Employee", visitsData.employee_name],
                       ["Security", visitsData.security_name || "-"],
-                      ["ID Card", visitsData.id_card || "-"],
+                      [
+                        "ID Card",
+                        visitsData.id_card ? (
+                          <button
+                            onClick={openIdCard}
+                            className="text-blue-600 hover:text-blue-800 hover:underline">
+                            View Content
+                          </button>
+                        ) : (
+                          "-"
+                        ),
+                      ],
                     ].map(([label, value]) => (
-                      <div key={label} className="flex justify-between">
+                      <div
+                        key={label as string}
+                        className="flex justify-between">
                         <dt className="text-sm text-gray-600">{label}</dt>
                         <dd className="text-sm font-medium text-gray-900">
                           {value}
@@ -225,11 +316,24 @@ const page = () => {
                   <dl className="space-y-2">
                     {[
                       ["Visit Category", visitsData.visit_category],
-                      ["Safety Permit", visitsData.safety_permit || "-"],
+                      [
+                        "Safety Permit",
+                        visitsData.safety_permit ? (
+                          <button
+                            onClick={openSafetyPermit}
+                            className="text-blue-600 hover:text-blue-800 hover:underline">
+                            View Content
+                          </button>
+                        ) : (
+                          "-"
+                        ),
+                      ],
                       ["Entry Method", visitsData.entry_method],
                       ["Vehicle Number", visitsData.vehicle_number || "-"],
                     ].map(([label, value]) => (
-                      <div key={label} className="flex justify-between">
+                      <div
+                        key={label as string}
+                        className="flex justify-between">
                         <dt className="text-sm text-gray-600">{label}</dt>
                         <dd className="text-sm font-medium text-gray-900">
                           {value}
