@@ -38,37 +38,35 @@ export default function Home() {
   };
 
   return (
-    <div>
-      <div className="mt-60 flex justify-center items-center">
-        <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-sm">
-          <form onSubmit={handleSubmit}>
-            <div className="mb-1">
-              <label
-                htmlFor="NIK"
-                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                NIK
-              </label>
-              <input
-                type="text"
-                id="NIK"
-                value={nik}
-                onChange={(e) => setNik(e.target.value)}
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                placeholder="Enter your NIK here"
-                required
-              />
-            </div>
-            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-            <div className="flex justify-center items-center mt-4">
-              <button
-                type="submit"
-                className="text-white bg-black hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                Submit
-              </button>
-            </div>
-          </form>
-        </div>
+    <main className="min-h-screen flex justify-center items-center bg-gray-50">
+      <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-sm">
+        <form onSubmit={handleSubmit}>
+          <div className="mb-1">
+            <label
+              htmlFor="NIK"
+              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+              NIK
+            </label>
+            <input
+              type="text"
+              id="NIK"
+              value={nik}
+              onChange={(e) => setNik(e.target.value)}
+              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              placeholder="Enter your NIK here"
+              required
+            />
+          </div>
+          {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          <div className="flex justify-center items-center mt-6">
+            <button
+              type="submit"
+              className="text-white bg-black hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+              Submit
+            </button>
+          </div>
+        </form>
       </div>
-    </div>
+    </main>
   );
 }

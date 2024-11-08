@@ -13,13 +13,19 @@ const page = () => {
     name: string;
   };
 
+  type VisitCategory =
+    | "Meeting___Visits"
+    | "Delivery"
+    | "Working__Project___Repair_"
+    | "VIP";
+
   const searchParams = useSearchParams();
   const nik = searchParams.get("nik");
   const [visitor, setVisitor] = useState({ name: "", company: "" });
   const [error, setError] = useState<string | null>(null);
   const [dateError, setDateError] = useState("");
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<VisitCategory[]>([]);
   const [methods, setMethods] = useState<string[]>([]);
   const [safetyPermitFile, setSafetyPermitFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -151,8 +157,11 @@ const page = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (formData.category === "high_risk_work" && !safetyPermitFile) {
-      setFileError("Safety permit is required for high risk work");
+    if (
+      formData.category === "Working__Project___Repair_" &&
+      !safetyPermitFile
+    ) {
+      setFileError("Safety permit is required for Working (Project & Repair)");
       return;
     }
 
@@ -205,278 +214,290 @@ const page = () => {
     }
   };
 
+  const categoryLabels: Record<VisitCategory, string> = {
+    Meeting___Visits: "Meeting & Visits",
+    Delivery: "Delivery",
+    Working__Project___Repair_: "Working (Project & Repair)",
+    VIP: "VIP",
+  };
   return (
-    <div>
-      <div className="mt-8 mb-5 flex justify-center items-center">
-        <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-lg h-[750px] overflow-y-auto">
-          <form onSubmit={handleSubmit}>
-            <div className="flex mb-5 space-x-2">
-              <div className="w-full">
-                <label
-                  htmlFor="name"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={visitor.name}
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  required
-                  readOnly
-                />
-              </div>
-              <div className="w-full">
-                <label
-                  htmlFor="company"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  Company/Institution
-                </label>
-                <input
-                  type="text"
-                  id="company"
-                  name="company"
-                  value={visitor.company}
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  required
-                  readOnly
-                />
-              </div>
-            </div>
-            <div className="mb-5">
+    <main className="h-[calc(100vh-81px)] w-full flex justify-center items-center bg-gray-50">
+      <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-xl h-[775px] overflow-y-auto">
+        <div className="flex flex-col items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Visit Booking
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">
+            Please fill in the visit details below
+          </p>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="flex mb-5 space-x-2">
+            <div className="w-full">
               <label
-                htmlFor="team-members"
+                htmlFor="name"
                 className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Do you bring team members?
-              </label>
-              <div className="bg-gray-50 p-2.5 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 mb-3">
-                <div className="flex space-x-4 ml-1">
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      name="bringTeam"
-                      value="yes"
-                      checked={bringTeam === true}
-                      onChange={handleTeamChange}
-                      className="w-4 h-4 accent-black border-gray-300 focus:ring-black"
-                      required
-                    />
-                    <span className="ml-2 text-sm">Yes</span>
-                  </label>
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      name="bringTeam"
-                      value="no"
-                      checked={bringTeam === false}
-                      onChange={handleTeamChange}
-                      className="w-4 h-4 accent-black border-gray-300 focus:ring-black"
-                      required
-                    />
-                    <span className="ml-2 text-sm">No</span>
-                  </label>
-                </div>
-              </div>
-              {bringTeam && (
-                <div>
-                  <label
-                    htmlFor="team-member-count"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                    Number of team members
-                  </label>
-                  <input
-                    type="number"
-                    id="teamMemberCount"
-                    value={teamMemberCount}
-                    onChange={handleTeamMemberCountChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                    required={bringTeam}
-                    min="1"
-                  />
-                  {teamMemberCount > 0 &&
-                    Array.from({ length: teamMemberCount }).map((_, index) => (
-                      <div key={index} className="mt-4">
-                        <label
-                          htmlFor={`team-member-${index}`}
-                          className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                          Team Member {index + 1} Name
-                        </label>
-                        <input
-                          type="text"
-                          id={`teamMember${index}`}
-                          value={teamMembers[index]}
-                          onChange={(e) => handleTeamMemberNameChange(index, e)}
-                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                          required
-                        />
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
-            <div className="mb-5">
-              <label
-                htmlFor="employee"
-                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Employee
-              </label>
-              <select
-                id="employee"
-                name="employee"
-                value={formData.employee}
-                onChange={handleInputChange}
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                required>
-                <option value="">Select an employee</option>
-                {employees.map((emp) => (
-                  <option key={emp.employee_id} value={emp.employee_id}>
-                    {emp.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex mb-5 space-x-2">
-              <div className="w-full">
-                <label
-                  htmlFor="entry_start_date"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  Entry Start Date
-                </label>
-                <input
-                  type="date"
-                  id="entry_start_date"
-                  name="entry_start_date"
-                  value={formData.entry_start_date}
-                  onChange={handleInputChange}
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div className="w-full">
-                <label
-                  htmlFor="entry_end_date"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  Entry End Date
-                </label>
-                <input
-                  type="date"
-                  id="entry_end_date"
-                  name="entry_end_date"
-                  value={formData.entry_end_date}
-                  onChange={handleInputChange}
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  required
-                />
-              </div>
-            </div>
-            <div className="mb-5">
-              <label
-                htmlFor="category"
-                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Visit Category
-              </label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                required>
-                <option value="">Select a category</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="mb-5">
-              <label
-                htmlFor="safety"
-                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Safety Permit
-                {formData.category === "high_risk_work" && (
-                  <span className="text-red-500 ml-1">*</span>
-                )}
+                Name
               </label>
               <input
-                type="file"
-                id="safety"
-                accept=".jpg,.jpeg,.png"
-                onChange={handleSafetyPermitChange}
+                type="text"
+                id="name"
+                name="name"
+                value={visitor.name}
                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                required={formData.category === "high_risk_work"}
-                disabled={formData.category !== "high_risk_work"}
+                required
+                readOnly
               />
-              {fileError && (
-                <p className="text-red-500 text-sm mt-1">{fileError}</p>
-              )}
-              {formData.category === "high_risk_work" && (
-                <p className="text-sm text-gray-500 mt-1">
-                  Supported formats: JPG, PNG (Max. 5MB)
-                </p>
-              )}
             </div>
-            <div className="flex mb-5 space-x-2">
-              <div className="w-full">
-                <label
-                  htmlFor="method"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  Entry Method
-                </label>
-                <select
-                  id="method"
-                  name="method"
-                  value={formData.method}
-                  onChange={handleInputChange}
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  required>
-                  <option value="">Select an entry method</option>
-                  {methods.map((method) => (
-                    <option key={method} value={method}>
-                      {method}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {formData.method === "vehicle" && (
-                <div className="w-full">
-                  <label
-                    htmlFor="vehicle"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                    Vehicle Number
-                  </label>
+            <div className="w-full">
+              <label
+                htmlFor="company"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                Company/Institution
+              </label>
+              <input
+                type="text"
+                id="company"
+                name="company"
+                value={visitor.company}
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                required
+                readOnly
+              />
+            </div>
+          </div>
+          <div className="mb-5">
+            <label
+              htmlFor="team-members"
+              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+              Do you bring team members?
+            </label>
+            <div className="bg-gray-50 p-2.5 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 mb-3">
+              <div className="flex space-x-4 ml-1">
+                <label className="inline-flex items-center">
                   <input
-                    type="text"
-                    id="vehicle"
-                    name="vehicle"
-                    value={formData.vehicle}
-                    onChange={handleInputChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                    type="radio"
+                    name="bringTeam"
+                    value="yes"
+                    checked={bringTeam === true}
+                    onChange={handleTeamChange}
+                    className="w-4 h-4 accent-black border-gray-300 focus:ring-black"
                     required
                   />
-                </div>
+                  <span className="ml-2 text-sm">Yes</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="bringTeam"
+                    value="no"
+                    checked={bringTeam === false}
+                    onChange={handleTeamChange}
+                    className="w-4 h-4 accent-black border-gray-300 focus:ring-black"
+                    required
+                  />
+                  <span className="ml-2 text-sm">No</span>
+                </label>
+              </div>
+            </div>
+            {bringTeam && (
+              <div>
+                <label
+                  htmlFor="team-member-count"
+                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                  Number of team members
+                </label>
+                <input
+                  type="number"
+                  id="teamMemberCount"
+                  value={teamMemberCount}
+                  onChange={handleTeamMemberCountChange}
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                  required={bringTeam}
+                  min="1"
+                />
+                {teamMemberCount > 0 &&
+                  Array.from({ length: teamMemberCount }).map((_, index) => (
+                    <div key={index} className="mt-4">
+                      <label
+                        htmlFor={`team-member-${index}`}
+                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                        Team Member {index + 1} Name
+                      </label>
+                      <input
+                        type="text"
+                        id={`teamMember${index}`}
+                        value={teamMembers[index]}
+                        onChange={(e) => handleTeamMemberNameChange(index, e)}
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        required
+                      />
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+          <div className="mb-5">
+            <label
+              htmlFor="employee"
+              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+              Employee
+            </label>
+            <select
+              id="employee"
+              name="employee"
+              value={formData.employee}
+              onChange={handleInputChange}
+              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              required>
+              <option value="">Select an employee</option>
+              {employees.map((emp) => (
+                <option key={emp.employee_id} value={emp.employee_id}>
+                  {emp.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex mb-5 space-x-2">
+            <div className="w-full">
+              <label
+                htmlFor="entry_start_date"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                Entry Start Date
+              </label>
+              <input
+                type="date"
+                id="entry_start_date"
+                name="entry_start_date"
+                value={formData.entry_start_date}
+                onChange={handleInputChange}
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                required
+              />
+            </div>
+            <div className="w-full">
+              <label
+                htmlFor="entry_end_date"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                Entry End Date
+              </label>
+              <input
+                type="date"
+                id="entry_end_date"
+                name="entry_end_date"
+                value={formData.entry_end_date}
+                onChange={handleInputChange}
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                required
+              />
+            </div>
+          </div>
+          <div className="mb-5">
+            <label
+              htmlFor="category"
+              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+              Visit Category
+            </label>
+            <select
+              id="category"
+              name="category"
+              value={formData.category}
+              onChange={handleInputChange}
+              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              required>
+              <option value="">Select a category</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {categoryLabels[cat]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mb-5">
+            <label
+              htmlFor="safety"
+              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+              Safety Permit
+              {formData.category === "Working__Project___Repair_" && (
+                <span className="text-red-500 ml-1">*</span>
               )}
-            </div>
-            <div className="flex justify-center items-center mt-8">
-              <button
-                type="submit"
-                className="text-white bg-black hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                Book Visit
-              </button>
-            </div>
-            {dateError && (
-              <p className="flex justify-center text-red-500 mt-5 text-sm">
-                {dateError}
+            </label>
+            <input
+              type="file"
+              id="safety"
+              accept=".jpg,.jpeg,.png"
+              onChange={handleSafetyPermitChange}
+              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              required={formData.category === "Working__Project___Repair_"}
+              disabled={formData.category !== "Working__Project___Repair_"}
+            />
+            {fileError && (
+              <p className="text-red-500 text-sm mt-1">{fileError}</p>
+            )}
+            {formData.category === "Working__Project___Repair_" && (
+              <p className="text-sm text-gray-500 mt-1">
+                Supported formats: JPG, PNG (Max. 5MB)
               </p>
             )}
-            {error && <p className="text-red-500">{error}</p>}
-          </form>
-        </div>
+          </div>
+          <div className="flex mb-5 space-x-2">
+            <div className="w-full">
+              <label
+                htmlFor="method"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                Entry Method
+              </label>
+              <select
+                id="method"
+                name="method"
+                value={formData.method}
+                onChange={handleInputChange}
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                required>
+                <option value="">Select an entry method</option>
+                {methods.map((method) => (
+                  <option key={method} value={method}>
+                    {method}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {formData.method === "vehicle" && (
+              <div className="w-full">
+                <label
+                  htmlFor="vehicle"
+                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                  Vehicle Number
+                </label>
+                <input
+                  type="text"
+                  id="vehicle"
+                  name="vehicle"
+                  value={formData.vehicle}
+                  onChange={handleInputChange}
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                  required
+                />
+              </div>
+            )}
+          </div>
+          <div className="flex justify-center items-center mt-8">
+            <button
+              type="submit"
+              className="text-white bg-black hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-500 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-black dark:hover:bg-gray-700 dark:focus:ring-gray-500">
+              Book Visit
+            </button>
+          </div>
+          {dateError && (
+            <p className="flex justify-center text-red-500 mt-5 text-sm">
+              {dateError}
+            </p>
+          )}
+          {error && <p className="text-red-500">{error}</p>}
+        </form>
       </div>
-    </div>
+    </main>
   );
 };
 

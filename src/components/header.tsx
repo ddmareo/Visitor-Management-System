@@ -12,28 +12,15 @@ const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const handleLogoClick = () => {
-    if (session?.user?.role) {
-      switch (session.user.role) {
-        case "admin":
-          router.push("/admin/dashboard");
-          break;
-        case "user":
-          router.push("/user/dashboard");
-          break;
-        case "security":
-          router.push("/security/dashboard");
-          break;
-        default:
-          router.push("/");
-      }
-    } else {
-      router.push("/");
+  useEffect(() => {
+    if (status === "authenticated") {
+      setIsDropdownOpen(false);
     }
-  };
+  }, [status]);
 
-  const handleVisitorDashboard = () => {
+  const handleLogoClick = () => {
     router.push("/");
+    router.refresh();
   };
 
   const handleLogin = async () => {
@@ -43,10 +30,13 @@ const Header = () => {
   const handleLogout = async () => {
     await signOut({ redirect: false });
     router.push("/");
+    router.refresh();
   };
 
   const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
+    if (status === "authenticated") {
+      setIsDropdownOpen(!isDropdownOpen);
+    }
   };
 
   // Capitalize the first letter of 'role' as it's currently in all lowercase letters.
@@ -79,7 +69,7 @@ const Header = () => {
   }, [session]);
 
   return (
-    <nav className="border-gray-200 bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
+    <nav className="sticky top-0 w-full bg-white z-50 border-b shadow-sm">
       <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
         <a
           onClick={handleLogoClick}
@@ -113,11 +103,6 @@ const Header = () => {
                       onClick={handleLogoClick}
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white cursor-pointer">
                       Dashboard
-                    </a>
-                    <a
-                      onClick={handleVisitorDashboard}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white cursor-pointer">
-                      Visitor
                     </a>
                     <a
                       onClick={handleLogout}

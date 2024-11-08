@@ -44,26 +44,26 @@ model users {
 }
 
 model visit {
-  visit_id              Int                 @id @default(autoincrement())
+  visit_id              Int                     @id @default(autoincrement())
   visitor_id            Int?
   employee_id           Int?
   security_id           Int?
-  visit_category        visit_category_enum
+  visit_category        new_visit_category_enum
   entry_method          entry_method_enum
-  vehicle_number        String?             @db.VarChar(20)
-  check_in_time         DateTime?           @db.Timestamp(6)
-  check_out_time        DateTime?           @db.Timestamp(6)
-  qr_code               String?             @db.VarChar(255)
-  verification_status   Boolean?            @default(false)
+  vehicle_number        String?                 @db.VarChar(20)
+  check_in_time         DateTime?               @db.Timestamp(6)
+  check_out_time        DateTime?               @db.Timestamp(6)
+  qr_code               String?                 @db.VarChar(255)
+  verification_status   Boolean?                @default(false)
   safety_permit         Bytes?
-  brings_team           Boolean?            @default(false)
+  brings_team           Boolean?                @default(false)
   team_members_quantity Int?
-  entry_start_date      DateTime            @db.Date
-  entry_end_date        DateTime            @db.Date
+  entry_start_date      DateTime                @db.Date
+  entry_end_date        DateTime                @db.Date
   teammember            teammember[]
-  employee              employee?           @relation(fields: [employee_id], references: [employee_id], onUpdate: NoAction)
-  security              security?           @relation(fields: [security_id], references: [security_id], onUpdate: NoAction)
-  visitor               visitor?            @relation(fields: [visitor_id], references: [visitor_id], onUpdate: NoAction)
+  employee              employee?               @relation(fields: [employee_id], references: [employee_id], onUpdate: NoAction)
+  security              security?               @relation(fields: [security_id], references: [security_id], onUpdate: NoAction)
+  visitor               visitor?                @relation(fields: [visitor_id], references: [visitor_id], onUpdate: NoAction)
 }
 
 model visitor {
@@ -90,8 +90,9 @@ enum user_role_enum {
   admin
 }
 
-enum visit_category_enum {
-  meeting
-  low_risk_work
-  high_risk_work
+enum new_visit_category_enum {
+  Meeting___Visits           @map("Meeting & Visits")
+  Delivery
+  Working__Project___Repair_ @map("Working (Project & Repair)")
+  VIP
 }

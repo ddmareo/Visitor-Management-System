@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   PrismaClient,
-  visit_category_enum,
+  new_visit_category_enum,
   entry_method_enum,
 } from "@prisma/client";
 import { v4 as uuidv4 } from "uuid";
@@ -21,7 +21,7 @@ export async function GET() {
       select: { employee_id: true, name: true },
     });
 
-    const visitCategories = Object.values(visit_category_enum);
+    const visitCategories = Object.values(new_visit_category_enum);
     const entryMethods = Object.values(entry_method_enum);
 
     return NextResponse.json({
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       formData.get("entry_start_date") as string
     );
     const entry_end_date = new Date(formData.get("entry_end_date") as string);
-    const category = formData.get("category") as visit_category_enum;
+    const category = formData.get("category") as new_visit_category_enum;
     const method = formData.get("method") as entry_method_enum;
     const vehicle = formData.get("vehicle") as string;
     const brings_team = formData.get("brings_team") === "true";
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     }
 
     let safetyPermitBuffer: Buffer | null = null;
-    if (category === "high_risk_work") {
+    if (category === "Working__Project___Repair_") {
       if (!safetyPermitFile) {
         return NextResponse.json(
           { error: "Safety permit is required for high risk work" },
