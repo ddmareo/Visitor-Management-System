@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import axios from "axios";
+import { CreditCard, AlertCircle, ArrowRight } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
@@ -13,23 +14,27 @@ export default function Home() {
     event.preventDefault();
     setError("");
 
-    if (!/^\d+$/.test(nik)) {
+    const nikWithoutSpaces = nik.replace(/\s+/g, "");
+
+    if (!/^\d+$/.test(nikWithoutSpaces)) {
       setError("NIK should contain only numbers.");
       return;
     }
 
-    if (nik.length !== 16) {
+    if (nikWithoutSpaces.length !== 16) {
       setError("NIK must be exactly 16 digits.");
       return;
     }
 
     try {
-      const response = await axios.get(`/api/visitors?nomorktp=${nik}`);
+      const response = await axios.get(
+        `/api/visitors?nomorktp=${nikWithoutSpaces}`
+      );
 
       if (response.data.exists) {
-        router.push(`/visitor/booking?nik=${nik}`);
+        router.push(`/visitor/booking?nik=${nikWithoutSpaces}`);
       } else {
-        router.push(`/visitor/register?nik=${nik}`);
+        router.push(`/visitor/register?nik=${nikWithoutSpaces}`);
       }
     } catch (error) {
       console.error("Error checking NIK:", error);
@@ -37,35 +42,65 @@ export default function Home() {
     }
   };
 
+  const formatNIK = (value: string) => {
+    const numbers = value.replace(/\D/g, "");
+    const chunks = numbers.match(/.{1,4}/g) || [];
+    return chunks.join(" ").substr(0, 19);
+  };
+
+  const handleNIKChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatNIK(e.target.value);
+    setNik(formatted);
+  };
+
   return (
-    <main className="min-h-screen flex justify-center items-center bg-gray-50">
-      <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-sm">
-        <form onSubmit={handleSubmit}>
-          <div className="mb-1">
-            <label
-              htmlFor="NIK"
-              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-              NIK
-            </label>
-            <input
-              type="text"
-              id="NIK"
-              value={nik}
-              onChange={(e) => setNik(e.target.value)}
-              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              placeholder="Enter your NIK here"
-              required
-            />
+    <main className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-xl p-8 space-y-8">
+          <div className="text-center space-y-2">
+            <div className="flex justify-center mb-4">
+              <div className="bg-gray-50 p-3 rounded-full">
+                <CreditCard className="h-6 w-6" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900">Welcome</h1>
+            <p className="text-gray-500">
+              Please enter your NIK (ID Card Number)
+            </p>
           </div>
-          {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-          <div className="flex justify-center items-center mt-6">
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-1">
+              <div className="relative group">
+                <input
+                  type="text"
+                  id="NIK"
+                  value={nik}
+                  onChange={handleNIKChange}
+                  placeholder="XXXX XXXX XXXX XXXX"
+                  className="w-full px-4 py-3 text-center text-lg tracking-wider border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all duration-200 ease-in-out font-medium"
+                  maxLength={19}
+                  required
+                />
+                <div className="absolute inset-0 border-2 border-transparent group-hover:border-gray-800 rounded-lg pointer-events-none transition-all duration-200 ease-in-out"></div>
+              </div>
+
+              {error && (
+                <div className="flex items-center space-x-2 text-red-500 bg-red-50 p-3 rounded-lg mt-2">
+                  <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
+            </div>
+
             <button
               type="submit"
-              className="text-white bg-black hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-              Submit
+              className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transform transition-all duration-200 ease-in-out hover:scale-[1.02] flex items-center justify-center space-x-2">
+              <span>Continue</span>
+              <ArrowRight className="h-5 w-5" />
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </main>
   );

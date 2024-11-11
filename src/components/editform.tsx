@@ -42,7 +42,8 @@ interface UsersData {
 
 interface VisitsData {
   visit_category: string;
-  entry_date: string;
+  entry_start_date: string;
+  entry_end_date: string;
   entry_method: string;
   vehicle_number?: string;
 }
@@ -75,11 +76,42 @@ const EditForm: React.FC<EditFormProps> = ({
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [securityPersonnel, setSecurityPersonnel] = useState<Security[]>([]);
 
+  const formatDateForInput = (dateString: string | undefined): string => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString);
+      return date.toISOString().split("T")[0];
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "";
+    }
+  };
+
+  const formatDateForSubmission = (dateString: string | undefined): string => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString);
+      return date.toISOString();
+    } catch (error) {
+      console.error("Error formatting date for submission:", error);
+      return "";
+    }
+  };
+
   useEffect(() => {
     if (isOpen && initialData) {
-      setFormData(initialData);
+      if (selectedTable === "visitsdata") {
+        const visits = initialData as VisitsData;
+        setFormData({
+          ...initialData,
+          entry_start_date: formatDateForInput(visits.entry_start_date),
+          entry_end_date: formatDateForInput(visits.entry_end_date),
+        });
+      } else {
+        setFormData(initialData);
+      }
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, selectedTable]);
 
   useEffect(() => {
     if (isOpen && selectedTable === "usersdata") {
@@ -127,7 +159,18 @@ const EditForm: React.FC<EditFormProps> = ({
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    if (selectedTable === "visitsdata") {
+      const visitsData = formData as Partial<VisitsData>;
+      const submissionData = {
+        ...formData,
+        entry_start_date: formatDateForSubmission(visitsData.entry_start_date),
+        entry_end_date: formatDateForSubmission(visitsData.entry_end_date),
+      };
+      onSubmit(submissionData);
+    } else {
+      onSubmit(formData);
+    }
   };
 
   if (!isOpen) return null;
@@ -425,20 +468,36 @@ const EditForm: React.FC<EditFormProps> = ({
                 onChange={handleChange}
                 required>
                 <option value="">Select category</option>
-                <option value="meeting">Meeting</option>
-                <option value="low_risk_work">Low Risk Work</option>
-                <option value="high_risk_work">High Risk Work</option>
+                <option value="Meeting___Visits">Meeting & Visits</option>
+                <option value="Delivery">Delivery</option>
+                <option value="Working__Project___Repair_">
+                  Working (Project & Repair)
+                </option>
+                <option value="VIP">VIP</option>
               </select>
             </div>
             <div className="mb-4">
-              <label htmlFor="entry_date" className={labelClass}>
-                Entry Date
+              <label htmlFor="entry_start_date" className={labelClass}>
+                Entry Start Date
               </label>
               <input
                 type="date"
-                id="entry_date"
-                name="entry_date"
-                value={(formData as VisitsData)?.entry_date || ""}
+                id="entry_start_date"
+                name="entry_start_date"
+                value={(formData as VisitsData)?.entry_start_date || ""}
+                className={inputClass}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="entry_end_date" className={labelClass}>
+                Entry End Date
+              </label>
+              <input
+                type="date"
+                id="entry_end_date"
+                name="entry_end_date"
+                value={(formData as VisitsData)?.entry_end_date || ""}
                 className={inputClass}
                 onChange={handleChange}
               />

@@ -33,19 +33,21 @@ const Header = () => {
     router.refresh();
   };
 
+  const handleVisitsClick = () => {
+    router.push("/security/visits-list");
+  };
+
   const toggleDropdown = () => {
     if (status === "authenticated") {
       setIsDropdownOpen(!isDropdownOpen);
     }
   };
 
-  // Capitalize the first letter of 'role' as it's currently in all lowercase letters.
   const capitalizeFirstLetter = (string: string | undefined): string => {
     if (!string) return "";
     return string.charAt(0).toUpperCase() + string.slice(1);
   };
 
-  // Closes the dropdown menu if the user clicks anywhere on the screen.
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -63,19 +65,22 @@ const Header = () => {
     };
   }, []);
 
-  // To fix the dropdown menu keeps on automatically appearing when redirected.
   useEffect(() => {
     setIsDropdownOpen(false);
   }, [session]);
 
+  const isSecurity = session?.user?.role === "security";
+
   return (
     <nav className="sticky top-0 w-full bg-white z-50 border-b shadow-sm">
       <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-        <a
-          onClick={handleLogoClick}
-          className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer">
-          <img src={Logo.src} className="h-12" alt="ALVA Logo" />
-        </a>
+        <div className="flex items-center space-x-6">
+          <a
+            onClick={handleLogoClick}
+            className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer">
+            <img src={Logo.src} className="h-12" alt="ALVA Logo" />
+          </a>
+        </div>
         <div className="flex justify-center items-center">
           {status === "loading" ? (
             <div className="loader">Loading...</div>
@@ -104,6 +109,13 @@ const Header = () => {
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white cursor-pointer">
                       Dashboard
                     </a>
+                    {isSecurity && (
+                      <a
+                        onClick={handleVisitsClick}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white cursor-pointer">
+                        Visits
+                      </a>
+                    )}
                     <a
                       onClick={handleLogout}
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white cursor-pointer">

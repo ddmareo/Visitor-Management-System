@@ -67,6 +67,22 @@ const page = () => {
     setError("");
 
     try {
+      const currentDate = new Date();
+      const startDate = new Date(visitsData.entry_start_date);
+
+      currentDate.setHours(0, 0, 0, 0);
+      startDate.setHours(0, 0, 0, 0);
+
+      if (currentDate < startDate) {
+        throw new Error(
+          "Cannot check in before the scheduled entry start date"
+        );
+      }
+
+      if (currentDate > startDate) {
+        throw new Error("Cannot check in after the scheduled entry start date");
+      }
+
       await axios.put(`/api/visits/checkin/${visitsData.visit_id}`);
       await fetchVisitsData(qrCode);
     } catch (err) {
@@ -83,6 +99,24 @@ const page = () => {
     setError("");
 
     try {
+      const currentDate = new Date();
+      const startDate = new Date(visitsData.entry_start_date);
+
+      currentDate.setHours(0, 0, 0, 0);
+      startDate.setHours(0, 0, 0, 0);
+
+      if (currentDate < startDate) {
+        throw new Error(
+          "Check out must be done on the same day as the check-in"
+        );
+      }
+
+      if (currentDate > startDate) {
+        throw new Error(
+          "Check out must be done on the same day as the check-in"
+        );
+      }
+
       await axios.put(`/api/visits/checkout/${visitsData.visit_id}`);
       await fetchVisitsData(qrCode);
     } catch (err) {
@@ -123,6 +157,12 @@ const page = () => {
             </body>
           </html>
         `);
+
+        newWindow.onunload = () => {
+          URL.revokeObjectURL(imageUrl);
+        };
+
+        newWindow.document.close();
       }
     } catch (error) {
       console.error("Error fetching ID card:", error);
@@ -171,7 +211,7 @@ const page = () => {
 
   return (
     <div className="my-8 w-full md:w-2/3 lg:w-1/3 px-4">
-      <form className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+      <form className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
         <div>
           <label
             htmlFor="qr_code"
@@ -208,10 +248,8 @@ const page = () => {
         </div>
       </form>
 
-      {error && <p className="text-red-500">{error}</p>}
-
       {visitsData && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-5">
           <div className="px-6 py-4 border-b border-gray-100">
             <h5 className="text-xl font-semibold text-gray-900">Visit Card</h5>
           </div>
@@ -429,6 +467,12 @@ const page = () => {
           onClose={() => setShowQrScanner(false)}
           onScanSuccess={handleQrScanSuccess}
         />
+      )}
+
+      {error && (
+        <div className="mb-4 p-4 text-sm text-red-700 bg-red-100 rounded-xl">
+          {error}
+        </div>
       )}
     </div>
   );

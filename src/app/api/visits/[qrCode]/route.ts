@@ -5,6 +5,13 @@ import { authOptions } from "@/lib/auth";
 
 const prisma = new PrismaClient();
 
+const visitCategoryMapping = {
+  Meeting___Visits: "Meeting & Visits",
+  Delivery: "Delivery",
+  Working__Project___Repair_: "Working (Project & Repair)",
+  VIP: "VIP",
+} as const;
+
 export async function GET(
   request: Request,
   { params }: { params: { qrCode: string } }
@@ -59,6 +66,11 @@ export async function GET(
       });
     }
 
+    const mappedCategory =
+      visitCategoryMapping[
+        visit.visit_category as keyof typeof visitCategoryMapping
+      ] || visit.visit_category;
+
     // Transform the visit data to match the expected format
     const transformedVisit = {
       ...visit,
@@ -68,9 +80,7 @@ export async function GET(
       security_name: visit.security?.security_name || "-",
       company_institution: visit.visitor?.company_institution,
       team_members: visit.teammember.map((member) => member.member_name),
-      visitor: undefined,
-      employee: undefined,
-      security: undefined,
+      visit_category: mappedCategory,
     };
 
     return new Response(JSON.stringify(transformedVisit), {

@@ -22,7 +22,8 @@ export async function PUT(
       },
       data: {
         visit_category: data.visit_category,
-        entry_date: new Date(data.entry_date),
+        entry_start_date: new Date(data.entry_start_date),
+        entry_end_date: new Date(data.entry_end_date),
         entry_method: data.entry_method,
         vehicle_number: data.vehicle_number || null,
       },

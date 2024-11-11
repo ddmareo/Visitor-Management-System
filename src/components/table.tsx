@@ -46,7 +46,11 @@ interface Visit {
   visitor_name?: string;
   employee_name?: string;
   security_name?: string;
-  visit_category: "meeting" | "low_risk_work" | "high_risk_work";
+  visit_category:
+    | "Meeting___Visits"
+    | "Delivery"
+    | "Working__Project___Repair_"
+    | "VIP";
   entry_start_date: string;
   entry_end_date: string;
   entry_method: "walking" | "vehicle";
