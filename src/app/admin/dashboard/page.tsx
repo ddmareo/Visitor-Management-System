@@ -12,10 +12,10 @@ const page = async () => {
 
   return (
     <div>
-      <div className="font-bold text-3xl flex justify-center items-center mt-10 mb-10">
+      <div className="font-bold text-3xl flex justify-center items-center my-10">
         <h1>Welcome back, Admin!</h1>
       </div>
-      <div className="flex justify-center items-center">
+      <div className="flex justify-center items-center mx-20">
         <Table />
       </div>
     </div>

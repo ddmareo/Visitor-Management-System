@@ -4,6 +4,13 @@ import { withAuth } from "@/lib/with-auth";
 
 const prisma = new PrismaClient();
 
+const visitCategoryMapping = {
+  Meeting___Visits: "Meeting & Visits",
+  Delivery: "Delivery",
+  Working__Project___Repair_: "Working (Project & Repair)",
+  VIP: "VIP",
+} as const;
+
 export async function GET(request: Request) {
   const authResponse = await withAuth(request);
 
@@ -41,6 +48,10 @@ export async function GET(request: Request) {
       visitor_name: visit.visitor?.name || "N/A",
       employee_name: visit.employee?.name || "N/A",
       security_name: visit.security?.security_name || "N/A",
+      visit_category:
+        visitCategoryMapping[
+          visit.visit_category as keyof typeof visitCategoryMapping
+        ] || visit.visit_category,
       visitor: undefined,
       employee: undefined,
       security: undefined,

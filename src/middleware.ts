@@ -25,9 +25,9 @@ export async function middleware(req: NextRequest) {
         case "admin":
           return NextResponse.redirect(new URL("/admin/dashboard", req.url));
         case "user":
-          return NextResponse.redirect(new URL("/user/dashboard", req.url));
+          return NextResponse.redirect(new URL("/user/home", req.url));
         case "security":
-          return NextResponse.redirect(new URL("/security/dashboard", req.url));
+          return NextResponse.redirect(new URL("/security/home", req.url));
         default:
           return NextResponse.redirect(new URL("/error/restricted", req.url));
       }
@@ -41,7 +41,11 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/error/restricted", req.url));
     }
 
-    if (pathname.startsWith("/security") && token.role !== "security") {
+    if (
+      pathname.startsWith("/security") &&
+      token.role !== "security" &&
+      token.role !== "admin"
+    ) {
       return NextResponse.redirect(new URL("/error/restricted", req.url));
     }
   }

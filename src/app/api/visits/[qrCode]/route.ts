@@ -18,7 +18,10 @@ export async function GET(
 ) {
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user.role !== "security") {
+  if (
+    !session ||
+    (session?.user?.role !== "security" && session?.user?.role !== "admin")
+  ) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 

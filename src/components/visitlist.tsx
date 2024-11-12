@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { useSession } from "next-auth/react";
 import {
   Calendar,
   Clock,
@@ -29,8 +31,28 @@ interface VisitsSectionProps {
   visits: Visit[];
 }
 
+const API_ENDPOINTS = {
+  SECURITY: "/api/visits/list-security",
+  USER: "/api/visits/list-employee",
+  ADMIN: "/api/visits/list-security",
+  DEFAULT: "",
+};
+
+const getApiEndpoint = (role?: string | null) => {
+  switch (role?.toLowerCase()) {
+    case "security":
+      return API_ENDPOINTS.SECURITY;
+    case "user":
+      return API_ENDPOINTS.USER;
+    case "admin":
+      return API_ENDPOINTS.ADMIN;
+    default:
+      return API_ENDPOINTS.DEFAULT;
+  }
+};
+
 const VisitsSection: React.FC<VisitsSectionProps> = ({ title, visits }) => (
-  <div className="bg-white rounded-lg shadow-sm p-6">
+  <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
     <div className="flex items-center gap-2 mb-4">
       <Calendar className="w-5 h-5 text-black" />
       <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
@@ -43,7 +65,7 @@ const VisitsSection: React.FC<VisitsSectionProps> = ({ title, visits }) => (
       {visits.map((visit) => (
         <div
           key={visit.id}
-          className="flex flex-col p-4 hover:bg-gray-50 rounded-lg border border-gray-100 transition-colors duration-150">
+          className="flex flex-col p-4 hover:bg-gray-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-150">
           <div className="flex justify-between items-start mb-3">
             <div className="flex items-center gap-2">
               <User className="w-4 h-4 text-gray-500" />
@@ -53,7 +75,7 @@ const VisitsSection: React.FC<VisitsSectionProps> = ({ title, visits }) => (
             </div>
             <span
               className={`
-                px-2 py-0.5 text-xs rounded-full
+                px-2 py-0.5 text-xs rounded-full font-medium shadow-sm
                 ${
                   visit.status === "Completed"
                     ? "bg-green-100 text-green-700"
@@ -75,7 +97,7 @@ const VisitsSection: React.FC<VisitsSectionProps> = ({ title, visits }) => (
               <Building2 className="w-4 h-4 text-gray-500" />
               <div>
                 <div className="text-gray-500">Company</div>
-                <div className="text-gray-900">{visit.company}</div>
+                <div className="text-gray-900 font-medium">{visit.company}</div>
               </div>
             </div>
 
@@ -83,7 +105,9 @@ const VisitsSection: React.FC<VisitsSectionProps> = ({ title, visits }) => (
               <UserCircle className="w-4 h-4 text-gray-500" />
               <div>
                 <div className="text-gray-500">Employee</div>
-                <div className="text-gray-900">{visit.employeeName}</div>
+                <div className="text-gray-900 font-medium">
+                  {visit.employeeName}
+                </div>
               </div>
             </div>
 
@@ -91,7 +115,7 @@ const VisitsSection: React.FC<VisitsSectionProps> = ({ title, visits }) => (
               <Clock className="w-4 h-4 text-gray-500" />
               <div>
                 <div className="text-gray-500">Start Date</div>
-                <div className="text-gray-900">
+                <div className="text-gray-900 font-medium">
                   {new Date(visit.startDate).toLocaleDateString("en-GB")}
                 </div>
               </div>
@@ -101,7 +125,7 @@ const VisitsSection: React.FC<VisitsSectionProps> = ({ title, visits }) => (
               <Clock className="w-4 h-4 text-gray-500" />
               <div>
                 <div className="text-gray-500">End Date</div>
-                <div className="text-gray-900">
+                <div className="text-gray-900 font-medium">
                   {new Date(visit.endDate).toLocaleDateString("en-GB")}
                 </div>
               </div>
@@ -111,7 +135,9 @@ const VisitsSection: React.FC<VisitsSectionProps> = ({ title, visits }) => (
               <DoorOpen className="w-4 h-4 text-gray-500" />
               <div>
                 <div className="text-gray-500">Entry Method</div>
-                <div className="text-gray-900">{visit.entryMethod}</div>
+                <div className="text-gray-900 font-medium">
+                  {visit.entryMethod}
+                </div>
               </div>
             </div>
 
@@ -119,7 +145,7 @@ const VisitsSection: React.FC<VisitsSectionProps> = ({ title, visits }) => (
               <Car className="w-4 h-4 text-gray-500" />
               <div>
                 <div className="text-gray-500">Vehicle</div>
-                <div className="text-gray-900">
+                <div className="text-gray-900 font-medium">
                   {visit.vehicleNumber || "-"}
                 </div>
               </div>
@@ -127,7 +153,7 @@ const VisitsSection: React.FC<VisitsSectionProps> = ({ title, visits }) => (
           </div>
 
           <div className="mt-3 flex items-center gap-2">
-            <div className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">
+            <div className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full shadow-sm font-medium">
               {visit.category}
             </div>
           </div>
@@ -135,7 +161,7 @@ const VisitsSection: React.FC<VisitsSectionProps> = ({ title, visits }) => (
       ))}
 
       {visits.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg shadow-sm">
           No visits scheduled
         </div>
       )}
@@ -146,12 +172,15 @@ const VisitsSection: React.FC<VisitsSectionProps> = ({ title, visits }) => (
 const VisitsPage = () => {
   const [todayVisits, setTodayVisits] = useState<Visit[]>([]);
   const [tomorrowVisits, setTomorrowVisits] = useState<Visit[]>([]);
+  const { data: session } = useSession();
+  const [error, setError] = useState<string>("");
 
   useEffect(() => {
     const fetchVisits = async () => {
       try {
-        const response = await fetch("/api/visits/list-security");
-        const data = await response.json();
+        const endpoint = getApiEndpoint(session?.user?.role);
+        const response = await axios.get(endpoint);
+        const data = response.data;
 
         const now = new Date();
         const today = new Date(
@@ -180,18 +209,29 @@ const VisitsPage = () => {
           );
         });
 
-        console.log("Today:", today);
-        console.log("Today Visits:", todayVisits);
-
         setTodayVisits(todayVisits);
         setTomorrowVisits(tomorrowVisits);
+        setError("");
       } catch (error) {
         console.error("Error fetching visits:", error);
+        setError("Failed to fetch visits. Please try again later.");
       }
     };
 
-    fetchVisits();
-  }, []);
+    if (session) {
+      fetchVisits();
+    }
+  }, [session]);
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="bg-red-50 text-red-700 p-4 rounded-lg shadow-md border border-red-100">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">

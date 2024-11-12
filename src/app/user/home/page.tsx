@@ -1,19 +1,19 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import VisitForm from "@/components/visitform";
+import VisitList from "@/components/visitlist";
 
 const page = async () => {
   const session = await getServerSession(authOptions);
 
-  if (!session || session?.user?.role !== "security") {
+  if (!session || session?.user?.role !== "user") {
     redirect("/error/restricted");
   }
 
   return (
     <div>
-      <div className="flex justify-center items-center mt-9">
-        <VisitForm />
+      <div className="mt-5">
+        <VisitList />
       </div>
     </div>
   );

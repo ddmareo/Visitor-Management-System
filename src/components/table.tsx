@@ -742,7 +742,7 @@ const table = () => {
   };
 
   return (
-    <div className="mx-16 mb-16">
+    <div>
       <div className="flex flex-col sm:flex-row flex-wrap space-y-4 sm:space-y-0 items-center justify-between pb-4">
         <div className="flex items-center space-x-1">
           <div className="relative mr-2.5">

@@ -1,17 +1,23 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import VisitForm from "@/components/visitform";
 
 const page = async () => {
   const session = await getServerSession(authOptions);
 
-  if (!session || session?.user?.role !== "user") {
+  if (
+    !session ||
+    (session.user.role !== "security" && session.user.role !== "admin")
+  ) {
     redirect("/error/restricted");
   }
 
   return (
-    <div className="mt-5 font-bold text-3xl ml-5">
-      <h1>Welcome back, User!</h1>
+    <div>
+      <div className="flex justify-center items-center mt-9">
+        <VisitForm />
+      </div>
     </div>
   );
 };

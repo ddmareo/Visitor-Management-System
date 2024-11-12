@@ -13,19 +13,42 @@ const visitCategoryMapping = {
 } as const;
 
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-
-  if (
-    !session ||
-    (session?.user?.role !== "security" && session?.user?.role !== "admin")
-  ) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = parseInt(session.user.id, 10);
+
+    const userWithEmployee = await prisma.users.findUnique({
+      where: {
+        user_id: userId,
+      },
+      include: {
+        employee: true,
+      },
+    });
+
+    if (session.user.role !== "user" || !userWithEmployee?.employee) {
+      return NextResponse.json(
+        { error: "Access denied: User role required" },
+        { status: 403 }
+      );
+    }
+
+    if (!userWithEmployee?.employee?.department) {
+      return NextResponse.json(
+        { error: "Department information not found" },
+        { status: 404 }
+      );
+    }
+
     const visits = await prisma.visit.findMany({
-      orderBy: {
-        entry_start_date: "desc",
+      where: {
+        employee: {
+          department: userWithEmployee.employee.department,
+        },
       },
       include: {
         visitor: {
@@ -37,6 +60,7 @@ export async function GET(request: Request) {
         employee: {
           select: {
             name: true,
+            department: true,
           },
         },
         security: {
@@ -70,6 +94,7 @@ export async function GET(request: Request) {
         visitorName: visit.visitor?.name || "N/A",
         company: visit.visitor?.company_institution || "N/A",
         employeeName: visit.employee?.name || "N/A",
+        department: visit.employee?.department || "N/A",
         startDate,
         endDate,
         category: mappedCategory,

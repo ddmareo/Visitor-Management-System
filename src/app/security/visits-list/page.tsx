@@ -6,7 +6,10 @@ import VisitList from "@/components/visitlist";
 const page = async () => {
   const session = await getServerSession(authOptions);
 
-  if (!session || session?.user?.role !== "security") {
+  if (
+    !session ||
+    (session.user.role !== "security" && session.user.role !== "admin")
+  ) {
     redirect("/error/restricted");
   }
 

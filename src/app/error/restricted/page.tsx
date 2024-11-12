@@ -25,10 +25,10 @@ const Page = () => {
         router.push("/admin/dashboard");
         break;
       case "user":
-        router.push("/user/dashboard");
+        router.push("/user/home");
         break;
       case "security":
-        router.push("/security/dashboard");
+        router.push("/security/home");
         break;
       default:
         router.push("/");

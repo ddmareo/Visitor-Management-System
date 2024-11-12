@@ -468,9 +468,9 @@ const EditForm: React.FC<EditFormProps> = ({
                 onChange={handleChange}
                 required>
                 <option value="">Select category</option>
-                <option value="Meeting___Visits">Meeting & Visits</option>
+                <option value="Meeting & Visits">Meeting & Visits</option>
                 <option value="Delivery">Delivery</option>
-                <option value="Working__Project___Repair_">
+                <option value="Working (Project & Repair)">
                   Working (Project & Repair)
                 </option>
                 <option value="VIP">VIP</option>

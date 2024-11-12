@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useSearchParams, useRouter } from "next/navigation";
+import { AlertCircle } from "lucide-react";
 
 const page = () => {
   const searchParams = useSearchParams();
@@ -29,10 +30,6 @@ const page = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (file.size > 5 * 1024 * 1024) {
-        setError("File size must be less than 5MB");
-        return;
-      }
       setSelectedFile(file);
       setError(null);
     }
@@ -43,6 +40,11 @@ const page = () => {
 
     if (!selectedFile) {
       setError("Please select an ID card file");
+      return;
+    }
+
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      setError("File size must be less than 5MB");
       return;
     }
 
@@ -239,8 +241,9 @@ const page = () => {
           </div>
 
           {error && (
-            <div className="text-red-500 mt-5 flex justify-center items-center">
-              {error}
+            <div className="flex items-center space-x-2 text-red-500 bg-red-50 p-3 rounded-lg mt-5">
+              <AlertCircle className="h-5 w-5" />
+              <p className="text-sm">{error}</p>
             </div>
           )}
         </form>
