@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import axios from "axios";
 import { CreditCard, AlertCircle, ArrowRight } from "lucide-react";
+import { SecureStorageService } from "@/utils/encryption";
 
 export default function Home() {
   const router = useRouter();
@@ -27,14 +28,14 @@ export default function Home() {
     }
 
     try {
-      const response = await axios.get(
-        `/api/visitors?nomorktp=${nikWithoutSpaces}`
-      );
+      const response = await axios.get(`/api/visitors/${nikWithoutSpaces}`);
+
+      await SecureStorageService.setItem("visitorNIK", nikWithoutSpaces);
 
       if (response.data.exists) {
-        router.push(`/visitor/booking?nik=${nikWithoutSpaces}`);
+        router.push("/visitor/booking");
       } else {
-        router.push(`/visitor/register?nik=${nikWithoutSpaces}`);
+        router.push("/visitor/register");
       }
     } catch (error) {
       console.error("Error checking NIK:", error);

@@ -56,7 +56,11 @@ const Header = () => {
   };
 
   const handleScanClick = () => {
-    router.push("/security/dashboard");
+    router.push("/security/home");
+  };
+
+  const handleTableClick = () => {
+    router.push("/admin/database");
   };
 
   const toggleDropdown = () => {
@@ -133,6 +137,13 @@ const Header = () => {
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white cursor-pointer">
                       {isAdmin ? "Dashboard" : "Home"}
                     </a>
+                    {isAdmin && (
+                      <a
+                        onClick={handleTableClick}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white cursor-pointer">
+                        Table
+                      </a>
+                    )}
                     {(isSecurity || isAdmin) && (
                       <a
                         onClick={handleVisitsClick}
@@ -144,7 +155,7 @@ const Header = () => {
                       <a
                         onClick={handleScanClick}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white cursor-pointer">
-                        Scan QR
+                        Scan
                       </a>
                     )}
                     <a

@@ -12,6 +12,7 @@
     "@prisma/client": "^5.20.0",
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
+    "flatpickr": "^4.6.13",
     "lucide-react": "^0.453.0",
     "next": "^14.2.14",
     "next-auth": "^4.24.8",
@@ -19,6 +20,8 @@
     "qrcode": "^1.5.4",
     "react": "^18",
     "react-dom": "^18",
+    "react-flatpickr": "^3.10.13",
+    "recharts": "^2.13.3",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
@@ -27,6 +30,7 @@
     "@types/qrcode": "^1.5.5",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/react-flatpickr": "^3.8.11",
     "@types/uuid": "^10.0.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.14",

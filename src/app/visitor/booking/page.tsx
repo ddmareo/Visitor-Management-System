@@ -1,9 +1,9 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { SecureStorageService } from "@/utils/encryption";
 
 const page = () => {
   const router = useRouter();
@@ -19,8 +19,7 @@ const page = () => {
     | "Working__Project___Repair_"
     | "VIP";
 
-  const searchParams = useSearchParams();
-  const nik = searchParams.get("nik");
+  const [nik, setNik] = useState<string | null>(null);
   const [visitor, setVisitor] = useState({ name: "", company: "" });
   const [error, setError] = useState<string | null>(null);
   const [dateError, setDateError] = useState("");
@@ -42,6 +41,19 @@ const page = () => {
   });
 
   useEffect(() => {
+    const checkNIK = async () => {
+      const storedNIK = await SecureStorageService.getItem("visitorNIK");
+      if (!storedNIK) {
+        router.push("/");
+        return;
+      }
+      setNik(storedNIK);
+    };
+
+    checkNIK();
+  }, [router]);
+
+  useEffect(() => {
     const fetchInitialData = async () => {
       try {
         const response = await axios.get("/api/booking");
@@ -55,7 +67,7 @@ const page = () => {
 
     const fetchVisitor = async () => {
       try {
-        const response = await axios.get(`/api/visitors?nomorktp=${nik}`);
+        const response = await axios.get(`/api/visitors/${nik}`);
         if (response.data.exists && response.data.visitor) {
           setVisitor({
             name: response.data.visitor.name,

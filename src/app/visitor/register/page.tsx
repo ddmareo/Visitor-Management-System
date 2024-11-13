@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { AlertCircle } from "lucide-react";
+import { SecureStorageService } from "@/utils/encryption";
 
 const page = () => {
-  const searchParams = useSearchParams();
-  const nik = searchParams.get("nik") || "";
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,11 +15,24 @@ const page = () => {
   const [formData, setFormData] = useState({
     name: "",
     company: "",
-    nomorktp: nik,
+    nomorktp: "",
     phone: "",
     email: "",
     address: "",
   });
+
+  useEffect(() => {
+    const checkNIK = async () => {
+      const storedNIK = await SecureStorageService.getItem("visitorNIK");
+      if (!storedNIK) {
+        router.push("/");
+        return;
+      }
+      setFormData((prev) => ({ ...prev, nomorktp: storedNIK }));
+    };
+
+    checkNIK();
+  }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

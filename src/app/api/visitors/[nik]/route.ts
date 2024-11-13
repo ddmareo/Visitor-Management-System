@@ -3,20 +3,22 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const nomorktp = searchParams.get("nomorktp");
+export async function GET(
+  request: Request,
+  { params }: { params: { nik: string } }
+) {
+  const nik = params.nik;
 
-  if (!nomorktp) {
+  if (!nik) {
     return NextResponse.json(
-      { error: "Missing 'nomorktp' query parameter" },
+      { error: "Missing NIK parameter" },
       { status: 400 }
     );
   }
 
   try {
     const visitor = await prisma.visitor.findUnique({
-      where: { id_number: nomorktp },
+      where: { id_number: nik },
       select: { name: true, company_institution: true },
     });
 
