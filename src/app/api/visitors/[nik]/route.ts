@@ -19,11 +19,27 @@ export async function GET(
   try {
     const visitor = await prisma.visitor.findUnique({
       where: { id_number: nik },
-      select: { name: true, company_institution: true },
+      select: {
+        name: true,
+        company: {
+          select: {
+            company_name: true,
+          },
+        },
+      },
     });
 
     if (visitor) {
-      return NextResponse.json({ exists: true, visitor }, { status: 200 });
+      return NextResponse.json(
+        {
+          exists: true,
+          visitor: {
+            name: visitor.name,
+            company_name: visitor.company?.company_name || null,
+          },
+        },
+        { status: 200 }
+      );
     } else {
       return NextResponse.json({ exists: false }, { status: 200 });
     }

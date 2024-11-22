@@ -71,7 +71,7 @@ const page = () => {
         if (response.data.exists && response.data.visitor) {
           setVisitor({
             name: response.data.visitor.name,
-            company: response.data.visitor.company_institution,
+            company: response.data.visitor.company_name,
           });
         } else {
           setError("Visitor not found");
@@ -233,7 +233,7 @@ const page = () => {
     VIP: "VIP",
   };
   return (
-    <main className="h-[calc(100vh-81px)] w-full flex justify-center items-center bg-gray-50">
+    <main className="min-h-screen flex justify-center items-center bg-gray-50 dark:bg-gray-900 pt-[calc(62px)]">
       <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-xl h-[775px] overflow-y-auto">
         <div className="flex flex-col items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -296,7 +296,7 @@ const page = () => {
                     className="w-4 h-4 accent-black border-gray-300 focus:ring-black"
                     required
                   />
-                  <span className="ml-2 text-sm">Yes</span>
+                  <span className="ml-2 text-sm dark:text-white">Yes</span>
                 </label>
                 <label className="inline-flex items-center">
                   <input
@@ -308,7 +308,7 @@ const page = () => {
                     className="w-4 h-4 accent-black border-gray-300 focus:ring-black"
                     required
                   />
-                  <span className="ml-2 text-sm">No</span>
+                  <span className="ml-2 text-sm dark:text-white">No</span>
                 </label>
               </div>
             </div>
@@ -497,7 +497,7 @@ const page = () => {
           <div className="flex justify-center items-center mt-8">
             <button
               type="submit"
-              className="text-white bg-black hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-500 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-black dark:hover:bg-gray-700 dark:focus:ring-gray-500">
+              className="text-white bg-black hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-500 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:text-black dark:bg-white dark:hover:bg-gray-100 dark:focus:ring-gray-300">
               Book Visit
             </button>
           </div>

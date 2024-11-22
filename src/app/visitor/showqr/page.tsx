@@ -10,12 +10,12 @@ const page = () => {
 
   return (
     <div>
-      <div className="mt-40 flex justify-center items-center">
+      <div className="min-h-screen flex justify-center items-center bg-gray-50 dark:bg-gray-900">
         <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-xl">
-          <h1 className="text-2xl font-semibold mb-4 text-center">
+          <h1 className="text-2xl font-semibold mb-4 text-center dark:text-white">
             Your visit has been booked successfully!
           </h1>
-          <p className="mb-6 text-gray-600 text-center">
+          <p className="mb-6 text-gray-600 text-center dark:text-gray-300">
             On the visit date, please present the QR code below to security
           </p>
           <div className="flex justify-center">

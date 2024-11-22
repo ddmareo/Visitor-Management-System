@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import axios from "axios";
+import { X } from "lucide-react";
 
 interface EditFormProps {
   isOpen: boolean;
@@ -13,7 +14,7 @@ interface EditFormProps {
 
 interface VisitorsData {
   name: string;
-  company_institution: string;
+  company_id: string;
   id_number: string;
   contact_phone: string;
   contact_email: string;
@@ -30,6 +31,10 @@ interface EmployeesData {
 
 interface SecurityData {
   security_name: string;
+}
+
+interface CompanyData {
+  company_name: string;
 }
 
 interface UsersData {
@@ -53,6 +58,7 @@ type FormDataType =
   | EmployeesData
   | SecurityData
   | UsersData
+  | CompanyData
   | VisitsData;
 
 const EditForm: React.FC<EditFormProps> = ({
@@ -72,9 +78,15 @@ const EditForm: React.FC<EditFormProps> = ({
     security_name: string;
   };
 
+  type Company = {
+    company_id: number;
+    company_name: string;
+  };
+
   const [formData, setFormData] = useState<Partial<FormDataType>>({});
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [securityPersonnel, setSecurityPersonnel] = useState<Security[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
 
   const formatDateForInput = (dateString: string | undefined): string => {
     if (!dateString) return "";
@@ -117,12 +129,14 @@ const EditForm: React.FC<EditFormProps> = ({
     if (isOpen && selectedTable === "usersdata") {
       fetchEmployees();
       fetchSecurityPersonnel();
+    } else if (isOpen && selectedTable === "visitorsdata") {
+      fetchCompanies();
     }
   }, [isOpen, selectedTable]);
 
   const fetchEmployees = async () => {
     try {
-      const response = await axios.get(`/api/table/${selectedTable}`);
+      const response = await axios.get(`/api/table/usersdata`);
       if (response.data.employees) {
         setEmployees(response.data.employees);
       }
@@ -140,6 +154,17 @@ const EditForm: React.FC<EditFormProps> = ({
     }
   };
 
+  const fetchCompanies = async () => {
+    try {
+      const response = await axios.get("/api/table/visitorsdata");
+      if (response.data.company) {
+        setCompanies(response.data.company);
+      }
+    } catch (error) {
+      console.error("Error fetching companies:", error);
+    }
+  };
+
   const handleChange = async (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -147,7 +172,11 @@ const EditForm: React.FC<EditFormProps> = ({
 
     if ((name === "employee_id" || name === "security_id") && value === "") {
       value = null as unknown as string;
-    } else if (name === "employee_id" || name === "security_id") {
+    } else if (
+      name === "employee_id" ||
+      name === "security_id" ||
+      name === "company_id"
+    ) {
       value = parseInt(value, 10) as unknown as string;
     }
 
@@ -176,8 +205,10 @@ const EditForm: React.FC<EditFormProps> = ({
   if (!isOpen) return null;
 
   const renderForm = () => {
-    const inputClass = "w-full p-2 border border-gray-300 rounded-lg";
-    const labelClass = "block mb-2 text-sm font-medium text-gray-900";
+    const inputClass =
+      "w-full p-2 border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-800 dark:text-white";
+    const labelClass =
+      "block mb-2 text-sm font-medium text-gray-900 dark:text-gray-100";
 
     switch (selectedTable) {
       case "visitorsdata":
@@ -198,18 +229,23 @@ const EditForm: React.FC<EditFormProps> = ({
               />
             </div>
             <div className="mb-4">
-              <label htmlFor="company_institution" className={labelClass}>
-                Company/Institution
+              <label htmlFor="company_id" className={labelClass}>
+                Company
               </label>
-              <input
-                type="text"
-                id="company_institution"
-                name="company_institution"
-                value={(formData as VisitorsData)?.company_institution || ""}
+              <select
+                id="company_id"
+                name="company_id"
+                value={(formData as VisitorsData)?.company_id || ""}
                 className={inputClass}
                 onChange={handleChange}
-                required
-              />
+                required>
+                <option value="">Select company</option>
+                {companies.map((company) => (
+                  <option key={company.company_id} value={company.company_id}>
+                    {company.company_name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="mb-4">
               <label htmlFor="id_number" className={labelClass}>
@@ -355,6 +391,24 @@ const EditForm: React.FC<EditFormProps> = ({
               id="security_name"
               name="security_name"
               value={(formData as SecurityData)?.security_name || ""}
+              className={inputClass}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        );
+
+      case "companydata":
+        return (
+          <div className="mb-4">
+            <label htmlFor="company_name" className={labelClass}>
+              Company Name
+            </label>
+            <input
+              type="text"
+              id="company_name"
+              name="company_name"
+              value={(formData as CompanyData)?.company_name || ""}
               className={inputClass}
               onChange={handleChange}
               required
@@ -540,29 +594,18 @@ const EditForm: React.FC<EditFormProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold">
+          <h2 className="text-xl font-bold dark:text-white">
             Edit{" "}
             {selectedTable.replace("data", "").charAt(0).toUpperCase() +
               selectedTable.replace("data", "").slice(1)}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            className="p-2 hover:bg-gray-100 rounded-full">
+            <X className="w-5 h-5 dark:text-white" />
           </button>
         </div>
         <form onSubmit={handleSubmit}>
@@ -576,7 +619,7 @@ const EditForm: React.FC<EditFormProps> = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 ">
+              className="px-4 py-2 text-sm font-medium text-white bg-black dark:bg-blue-600 rounded-lg hover:bg-gray-800 dark:hover:bg-blue-700">
               Save Changes
             </button>
           </div>

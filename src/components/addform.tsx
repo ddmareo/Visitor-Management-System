@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
-import { hash } from "bcryptjs";
 import axios from "axios";
+import { X } from "lucide-react";
 
 interface AddFormProps {
   isOpen: boolean;
@@ -30,6 +30,10 @@ interface EmployeesData {
 
 interface SecurityData {
   security_name: string;
+}
+
+interface CompanyData {
+  company_name: string;
 }
 
 interface UsersData {
@@ -61,6 +65,7 @@ type FormDataType =
   | SecurityData
   | UsersData
   | VisitsData
+  | CompanyData
   | TeamMembersData;
 
 const AddForm: React.FC<AddFormProps> = ({
@@ -137,8 +142,10 @@ const AddForm: React.FC<AddFormProps> = ({
   if (!isOpen) return null;
 
   const renderForm = () => {
-    const inputClass = "w-full p-2 border border-gray-300 rounded-lg";
-    const labelClass = "block mb-2 text-sm font-medium text-gray-900";
+    const inputClass =
+      "w-full p-2 border border-gray-300 rounded-lg dark:border-gray-600 dark:bg-gray-800 dark:text-white";
+    const labelClass =
+      "block mb-2 text-sm font-medium text-gray-900 dark:text-gray-100";
 
     switch (selectedTable) {
       case "visitorsdata":
@@ -304,6 +311,23 @@ const AddForm: React.FC<AddFormProps> = ({
               type="text"
               id="security_name"
               name="security_name"
+              className={inputClass}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        );
+
+      case "companydata":
+        return (
+          <div className="mb-4">
+            <label htmlFor="company_name" className={labelClass}>
+              Company Name
+            </label>
+            <input
+              type="text"
+              id="company_name"
+              name="company_name"
               className={inputClass}
               onChange={handleChange}
               required
@@ -537,29 +561,18 @@ const AddForm: React.FC<AddFormProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold">
+          <h2 className="text-xl font-bold dark:text-white">
             Add New{" "}
             {selectedTable.replace("data", "").charAt(0).toUpperCase() +
               selectedTable.replace("data", "").slice(1)}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            className="p-2 hover:bg-gray-100 rounded-full">
+            <X className="w-5 h-5 dark:text-white" />
           </button>
         </div>
         <form onSubmit={handleSubmit}>
@@ -573,7 +586,7 @@ const AddForm: React.FC<AddFormProps> = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 ">
+              className="px-4 py-2 text-sm font-medium text-white bg-black dark:bg-blue-600 rounded-lg hover:bg-gray-800 dark:hover:bg-blue-700 ">
               Add Entry
             </button>
           </div>

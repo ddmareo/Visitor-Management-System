@@ -11,13 +11,12 @@ const page = async () => {
   }
 
   return (
-    <div>
-      <div className="font-bold text-3xl flex justify-center items-center my-10">
-        <h1>Welcome back, Admin!</h1>
-      </div>
-      <div className="flex justify-center items-center mx-20 mb-16">
-        <Table />
-      </div>
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+      <main className="flex-1 p-6 sm:ml-64 mt-[63px]">
+        <div>
+          <Table />
+        </div>
+      </main>
     </div>
   );
 };

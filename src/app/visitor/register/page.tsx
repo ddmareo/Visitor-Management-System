@@ -6,11 +6,19 @@ import { useRouter } from "next/navigation";
 import { AlertCircle } from "lucide-react";
 import { SecureStorageService } from "@/utils/encryption";
 
+interface Company {
+  id: string;
+  name: string;
+}
+
 const page = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [showNewCompanyField, setShowNewCompanyField] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -22,6 +30,20 @@ const page = () => {
   });
 
   useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const response = await axios.get("/api/register");
+        if (Array.isArray(response.data)) {
+          setCompanies(response.data);
+        } else {
+          setError("Invalid data format received from server");
+        }
+      } catch (error) {
+        console.error("Error fetching companies:", error);
+        setError("Failed to load companies");
+      }
+    };
+
     const checkNIK = async () => {
       const storedNIK = await SecureStorageService.getItem("visitorNIK");
       if (!storedNIK) {
@@ -31,11 +53,20 @@ const page = () => {
       setFormData((prev) => ({ ...prev, nomorktp: storedNIK }));
     };
 
+    fetchCompanies();
     checkNIK();
   }, [router]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
+
+    if (name === "company") {
+      setShowNewCompanyField(value === "others");
+      setNewCompanyName("");
+    }
+
     setFormData({ ...formData, [name]: value });
   };
 
@@ -66,7 +97,12 @@ const page = () => {
     try {
       const submitFormData = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
-        submitFormData.append(key, value);
+        if (key === "company" && showNewCompanyField) {
+          submitFormData.append("company", newCompanyName);
+          submitFormData.append("isNewCompany", "true");
+        } else {
+          submitFormData.append(key, value);
+        }
       });
       submitFormData.append("idCard", selectedFile);
 
@@ -77,7 +113,7 @@ const page = () => {
       });
 
       console.log("Registration successful:", response.data);
-      router.push(`/visitor/booking?nik=${formData.nomorktp}`);
+      router.push(`/visitor/booking`);
     } catch (error: any) {
       console.error("Registration error:", error);
       setError(
@@ -89,8 +125,8 @@ const page = () => {
   };
 
   return (
-    <main className="min-h-screen flex justify-center items-center bg-gray-50">
-      <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-lg">
+    <main className="min-h-screen flex justify-center items-center bg-gray-50 dark:bg-gray-900 pt-[calc(6rem)] pb-9">
+      <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-lg h-[775px] overflow-y-auto">
         <div className="flex flex-col items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Visitor Registration
@@ -122,16 +158,40 @@ const page = () => {
               className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
               Company/Institution
             </label>
-            <input
-              type="text"
+            <select
               id="company"
               name="company"
               value={formData.company}
               onChange={handleChange}
               className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              required
-            />
+              required>
+              <option value="">Select a company</option>
+              <option value="others">Others</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
           </div>
+
+          {showNewCompanyField && (
+            <div className="mb-5">
+              <label
+                htmlFor="newCompany"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                New Company Name
+              </label>
+              <input
+                type="text"
+                id="newCompany"
+                value={newCompanyName}
+                onChange={(e) => setNewCompanyName(e.target.value)}
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                required
+              />
+            </div>
+          )}
           <div className="mb-5">
             <label
               htmlFor="nomorktp"
@@ -247,7 +307,7 @@ const page = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="text-white bg-black hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-500 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-black dark:hover:bg-gray-700 dark:focus:ring-gray-500">
+              className="text-white bg-black hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-500 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:text-black dark:bg-white dark:hover:bg-gray-100 dark:focus:ring-gray-300">
               {isLoading ? "Registering..." : "Register"}
             </button>
           </div>

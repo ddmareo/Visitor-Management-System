@@ -31,7 +31,12 @@ export async function GET(request: Request) {
         visitor: {
           select: {
             name: true,
-            company_institution: true,
+            company_id: true,
+            company: {
+              select: {
+                company_name: true,
+              },
+            },
           },
         },
         employee: {
@@ -68,7 +73,7 @@ export async function GET(request: Request) {
       return {
         id: visit.visit_id.toString(),
         visitorName: visit.visitor?.name || "N/A",
-        company: visit.visitor?.company_institution || "N/A",
+        company: visit.visitor?.company?.company_name || "N/A",
         employeeName: visit.employee?.name || "N/A",
         startDate,
         endDate,

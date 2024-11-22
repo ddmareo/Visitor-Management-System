@@ -11,10 +11,12 @@ const page = async () => {
   }
 
   return (
-    <div>
-      <div>
-        <Charts />
-      </div>
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+      <main className="flex-1 p-4 sm:ml-64 mt-[63px]">
+        <div className="rounded-xl overflow-hidden">
+          <Charts />
+        </div>
+      </main>
     </div>
   );
 };

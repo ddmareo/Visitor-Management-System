@@ -1,6 +1,6 @@
-import { withAuth } from "@/lib/with-auth";
 import { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/with-auth";
 
 const prisma = new PrismaClient();
 
@@ -16,23 +16,18 @@ export async function PUT(
 
   try {
     const data = await req.json();
-    const updatedVisitor = await prisma.visitor.update({
+    const updatedCompany = await prisma.company.update({
       where: {
-        visitor_id: parseInt(params.id, 10),
+        company_id: parseInt(params.id, 10),
       },
       data: {
-        name: data.name,
-        company_id: data.company_id,
-        id_number: data.id_number,
-        contact_phone: data.contact_phone,
-        contact_email: data.contact_email,
-        address: data.address,
+        company_name: data.company_name,
       },
     });
-    return NextResponse.json(updatedVisitor);
+    return NextResponse.json(updatedCompany);
   } catch (error) {
     return NextResponse.json(
-      { error: "Error updating visitor" },
+      { error: "Error updating company" },
       { status: 500 }
     );
   }

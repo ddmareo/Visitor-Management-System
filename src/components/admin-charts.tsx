@@ -11,11 +11,16 @@ import {
   Line,
   ResponsiveContainer,
 } from "recharts";
-import { Calendar, Clock, Users, TrendingUp } from "lucide-react";
+import { Calendar, Clock, Users, TrendingUp, Building2 } from "lucide-react";
 
 type VisitData = {
   day?: string;
   month?: string;
+  visits: number;
+};
+
+type DepartmentData = {
+  department: string;
   visits: number;
 };
 
@@ -40,6 +45,7 @@ const VisitorDashboard = () => {
   });
 
   const [visitData, setVisitData] = useState<VisitData[]>([]);
+  const [departmentData, setDepartmentData] = useState<DepartmentData[]>([]);
   const [timeData, setTimeData] = useState<TimeData[]>([]);
   const [stats, setStats] = useState<Stats>({
     total_visits: 0,
@@ -48,6 +54,10 @@ const VisitorDashboard = () => {
   });
 
   const [isLoading, setIsLoading] = useState(true);
+
+  const formatXAxis = (tickItem: string) => {
+    return tickItem;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -110,13 +120,14 @@ const VisitorDashboard = () => {
 
           setTimeData(data.timeDistribution);
           setStats(data.stats);
+          setDepartmentData(data.departmentData || []);
         } else {
           console.error("Failed to fetch data:", data.error);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
-        setIsLoading(false); // Ensure loading state is updated even on error
+        setIsLoading(false);
       }
     };
 
@@ -139,52 +150,46 @@ const VisitorDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white p-8">
+    <div className="min-h-screen bg-white dark:bg-gray-900 p-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          Visitor Dashboard
-        </h1>
-
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-gray-50 p-6 rounded-lg">
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
             <div className="flex items-center mb-2">
-              <Users className="w-5 h-5 text-gray-700 mr-2" />
-              <h3 className="text-lg font-semibold text-gray-700">
+              <Users className="w-5 h-5 text-gray-700 dark:text-gray-300 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
                 Total Visits
               </h3>
             </div>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">
               {stats.total_visits}
             </p>
           </div>
 
-          <div className="bg-gray-50 p-6 rounded-lg">
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
             <div className="flex items-center mb-2">
-              <TrendingUp className="w-5 h-5 text-gray-700 mr-2" />
-              <h3 className="text-lg font-semibold text-gray-700">
+              <TrendingUp className="w-5 h-5 text-gray-700 dark:text-gray-300 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
                 Average Visits
               </h3>
             </div>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">
               {stats.average_visits}
             </p>
           </div>
 
-          <div className="bg-gray-50 p-6 rounded-lg">
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
             <div className="flex items-center mb-2">
-              <Calendar className="w-5 h-5 text-gray-700 mr-2" />
-              <h3 className="text-lg font-semibold text-gray-700">
+              <Calendar className="w-5 h-5 text-gray-700 dark:text-gray-300 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
                 Peak Visits
               </h3>
             </div>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">
               {stats.peak_visits}
             </p>
           </div>
         </div>
 
-        {/* Period Toggle and Date Picker */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex gap-4">
             {periods.map((period) => (
@@ -193,88 +198,172 @@ const VisitorDashboard = () => {
                 onClick={() => handlePeriodChange(period.id)}
                 className={`px-4 py-2 rounded-md transition-colors ${
                   selectedPeriod === period.id
-                    ? "bg-gray-900 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    ? "bg-gray-900 dark:bg-gray-200 text-white dark:text-gray-900"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 }`}>
                 {period.label}
               </button>
             ))}
           </div>
 
-          {/* Date Picker */}
           <input
             type={selectedPeriod === "monthly" ? "month" : "number"}
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
             min={selectedPeriod === "yearly" ? "2000" : "2000-01"}
             max={selectedPeriod === "yearly" ? "2099" : "2099-12"}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           />
         </div>
 
-        {/* Main Chart */}
-        <div className="bg-gray-50 p-6 rounded-lg mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
             Visitor Trends
           </h2>
           <div className="h-80">
             {isLoading ? (
               <div className="h-full flex items-center justify-center">
-                <p>Loading...</p>
+                <p className="text-gray-600 dark:text-gray-300">Loading...</p>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={visitData}>
                   <XAxis
                     dataKey={selectedPeriod === "monthly" ? "day" : "month"}
-                    stroke="#374151"
+                    stroke="currentColor"
+                    className="text-gray-600 dark:text-gray-300"
                   />
-                  <YAxis stroke="#374151" />
+                  <YAxis
+                    stroke="currentColor"
+                    className="text-gray-600 dark:text-gray-300"
+                  />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #e5e7eb",
+                      backgroundColor: "var(--tooltip-bg, #fff)",
+                      border: "1px solid var(--tooltip-border, #e5e7eb)",
                       borderRadius: "0.375rem",
+                      color: "var(--tooltip-text, #111827)",
+                    }}
+                    itemStyle={{
+                      color: "var(--tooltip-text, #111827)",
                     }}
                   />
-                  <Bar dataKey="visits" fill="#111827" radius={[4, 4, 0, 0]} />
+                  <Bar
+                    dataKey="visits"
+                    fill="currentColor"
+                    className="fill-gray-900 dark:fill-gray-100"
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}
           </div>
         </div>
 
-        {/* Time Distribution Chart */}
-        <div className="bg-gray-50 p-6 rounded-lg">
+        <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg mb-8">
           <div className="flex items-center mb-4">
-            <Clock className="w-5 h-5 text-gray-700 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-900">
+            <Building2 className="w-5 h-5 text-gray-700 dark:text-gray-300 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Visits by Department
+            </h2>
+          </div>
+          <div className="h-80">
+            {isLoading ? (
+              <div className="h-full flex items-center justify-center">
+                <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={departmentData}>
+                  <XAxis
+                    dataKey="department"
+                    stroke="currentColor"
+                    height={80}
+                    className="text-gray-600 dark:text-gray-300"
+                  />
+                  <YAxis
+                    stroke="currentColor"
+                    className="text-gray-600 dark:text-gray-300"
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--tooltip-bg, #fff)",
+                      border: "1px solid var(--tooltip-border, #e5e7eb)",
+                      borderRadius: "0.375rem",
+                      color: "var(--tooltip-text, #111827)",
+                    }}
+                    itemStyle={{
+                      color: "var(--tooltip-text, #111827)",
+                    }}
+                  />
+                  <Bar
+                    dataKey="visits"
+                    fill="currentColor"
+                    className="fill-gray-900 dark:fill-gray-100"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+          <div className="flex items-center mb-4">
+            <Clock className="w-5 h-5 text-gray-700 dark:text-gray-300 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               Time Distribution
             </h2>
           </div>
           <div className="h-80">
             {isLoading ? (
               <div className="h-full flex items-center justify-center">
-                <p>Loading...</p>
+                <p className="text-gray-600 dark:text-gray-300">Loading...</p>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={timeData}>
-                  <XAxis dataKey="time" stroke="#374151" />
-                  <YAxis stroke="#374151" />
+                <LineChart
+                  data={timeData}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 25 }}>
+                  <XAxis
+                    dataKey="time"
+                    stroke="currentColor"
+                    interval={1}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                    tickFormatter={formatXAxis}
+                    tick={{ fontSize: 12 }}
+                    className="text-gray-600 dark:text-gray-300"
+                  />
+                  <YAxis
+                    stroke="currentColor"
+                    tick={{ fontSize: 12 }}
+                    className="text-gray-600 dark:text-gray-300"
+                  />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #e5e7eb",
+                      backgroundColor: "var(--tooltip-bg, #fff)",
+                      border: "1px solid var(--tooltip-border, #e5e7eb)",
                       borderRadius: "0.375rem",
+                      color: "var(--tooltip-text, #111827)",
                     }}
+                    itemStyle={{
+                      color: "var(--tooltip-text, #111827)",
+                    }}
+                    formatter={(value: number) => [`${value} visits`, "Visits"]}
+                    labelFormatter={(time: string) => `Time: ${time}`}
                   />
                   <Line
                     type="monotone"
                     dataKey="visits"
-                    stroke="#111827"
+                    stroke="var(--tw-prose-body)"
                     strokeWidth={2}
-                    dot={{ fill: "#111827" }}
+                    dot={{
+                      fill: "var(--tw-prose-body)",
+                      r: 3,
+                    }}
+                    className="stroke-gray-900 dark:stroke-gray-100 fill-gray-900 dark:fill-gray-100"
                   />
                 </LineChart>
               </ResponsiveContainer>

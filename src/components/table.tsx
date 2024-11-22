@@ -1,21 +1,38 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Search, Eye, Edit } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Search,
+  Eye,
+  Edit,
+  Upload,
+  Download,
+  Plus,
+  Trash2,
+  File,
+  QrCode,
+} from "lucide-react";
 import axios from "axios";
 import AddForm from "./addform";
 import EditForm from "./editform";
+import CSVPreviewModal from "@/components/csv-preview";
+import QRCodeModal from "@/components/qrcode-preview";
 
 interface Visitor {
   visitor_id: string;
   name: string;
-  company_institution: string;
+  company_name: string;
   id_number: string;
   contact_phone: string;
   contact_email: string;
   address: string;
   registration_date: string;
   id_card: string;
+}
+
+interface Company {
+  company_id: string;
+  company_name: string;
 }
 
 interface Employee {
@@ -57,7 +74,6 @@ interface Visit {
   vehicle_number?: string | null;
   check_in_time?: string | null;
   check_out_time?: string | null;
-  qr_code: string;
   verification_status: boolean;
   safety_permit?: string | null;
   brings_team: boolean;
@@ -70,13 +86,26 @@ interface TeamMember {
   member_name: string;
 }
 
-type FormDataType = Visitor | Employee | Security | Users | Visit | TeamMember;
+type FormDataType =
+  | Visitor
+  | Company
+  | Employee
+  | Security
+  | Users
+  | Visit
+  | TeamMember;
 
 const table = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTable, setSelectedTable] = useState("visitorsdata");
   const [tableData, setTableData] = useState<
-    Visitor[] | Employee[] | Security[] | Users[] | Visit[] | TeamMember[]
+    | Visitor[]
+    | Company[]
+    | Employee[]
+    | Security[]
+    | Users[]
+    | Visit[]
+    | TeamMember[]
   >([]);
   const [loading, setLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -85,6 +114,29 @@ const table = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const [csvPreviewData, setCSVPreviewData] = useState<any[]>([]);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrCodeImage, setQRCodeImage] = useState<string>("");
+
+  const downloadTemplate = () => {
+    const templateData = `name,email,phone,department,position
+    John Doe,john@example.com,+1234567890,IT,Software Engineer
+    Jane Smith,jane@example.com,+0987654321,HR,Manager`;
+
+    const blob = new Blob([templateData], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "employee_template.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -93,6 +145,8 @@ const table = () => {
         const { data } = await axios.get(`/api/table/${selectedTable}`);
         if (selectedTable === "usersdata") {
           setTableData(data.users);
+        } else if (selectedTable === "visitorsdata") {
+          setTableData(data.visitors);
         } else {
           setTableData(data);
         }
@@ -144,6 +198,8 @@ const table = () => {
             return (item as Visit).visit_id;
           case "teammembersdata":
             return (item as TeamMember).team_member_id;
+          case "companydata":
+            return (item as Company).company_id;
           default:
             return "";
         }
@@ -240,6 +296,19 @@ const table = () => {
     }
   };
 
+  const openQRCode = async (visitId: string) => {
+    try {
+      const response = await axios.get(
+        `/api/table/visitsdata/qrcode/${visitId}`
+      );
+      setQRCodeImage(response.data.qrCodeImage);
+      setShowQRModal(true);
+    } catch (error) {
+      console.error("Error fetching QR code:", error);
+      alert("Failed to load QR Code");
+    }
+  };
+
   const handleSubmit = async (formData: FormDataType) => {
     try {
       await axios.post(`/api/table/${selectedTable}`, formData);
@@ -273,6 +342,8 @@ const table = () => {
       const { data } = await axios.get(`/api/table/${selectedTable}`);
       if (selectedTable === "usersdata") {
         setTableData(data.users);
+      } else if (selectedTable === "visitorsdata") {
+        setTableData(data.visitors);
       } else {
         setTableData(data);
       }
@@ -291,6 +362,114 @@ const table = () => {
   const handleEdit = (item: any) => {
     setSelectedItem(item);
     setIsEditModalOpen(true);
+  };
+
+  const handleCSVFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "text/csv") {
+      alert("Please upload a CSV file");
+      return;
+    }
+
+    setSelectedFile(file);
+
+    try {
+      const text = await file.text();
+      const rows = text.split("\n");
+      const headers = rows[0].split(",");
+
+      const data = rows
+        .slice(1)
+        .map((row) => {
+          const values = row.split(",");
+          return headers.reduce((obj: any, header, index) => {
+            obj[header.trim()] = values[index]?.trim() || "";
+            return obj;
+          }, {});
+        })
+        .filter((row) => Object.values(row).some((value) => value));
+
+      setCSVPreviewData(data);
+      setShowPreviewModal(true);
+    } catch (error) {
+      console.error("Error reading CSV file:", error);
+      alert("Error reading CSV file");
+    }
+  };
+
+  const handleCSVImport = async () => {
+    if (!selectedFile) return;
+
+    setImporting(true);
+    setShowPreviewModal(false);
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+      const response = await axios.post(
+        "/api/table/employeesdata/import",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      const { data } = await axios.get(`/api/table/${selectedTable}`);
+      setTableData(data);
+      alert(`Successfully imported ${response.data.imported} employees`);
+    } catch (error: any) {
+      console.error("Error importing CSV:", error);
+      alert(error.response?.data?.message || "Failed to import CSV file");
+    } finally {
+      setImporting(false);
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleExportCSV = () => {
+    if (selectedTable === "employeesdata") {
+      const employees = tableData as Employee[];
+
+      const headers = ["name,email,phone,department,position"];
+
+      const csvRows = employees.map((employee) => {
+        return [
+          employee.name,
+          employee.email,
+          employee.phone || "",
+          employee.department,
+          employee.position,
+        ]
+          .map((field) => `${field}`)
+          .join(",");
+      });
+
+      const csvContent = [headers, ...csvRows].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "employees.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    }
   };
 
   const handleEditSubmit = async (formData: any) => {
@@ -315,6 +494,9 @@ const table = () => {
         case "teammembersdata":
           id = selectedItem.team_member_id;
           break;
+        case "companydata":
+          id = selectedItem.company_id;
+          break;
         default:
           throw new Error("Invalid table selected");
       }
@@ -323,6 +505,8 @@ const table = () => {
       const { data } = await axios.get(`/api/table/${selectedTable}`);
       if (selectedTable === "usersdata") {
         setTableData(data.users);
+      } else if (selectedTable === "visitorsdata") {
+        setTableData(data.visitors);
       } else {
         setTableData(data);
       }
@@ -343,6 +527,14 @@ const table = () => {
       case "visitorsdata":
         return (tableData as Visitor[]).filter((visitor) =>
           Object.values(visitor).some(
+            (value) =>
+              value && value.toString().toLowerCase().includes(searchLower)
+          )
+        );
+
+      case "companydata":
+        return (tableData as Company[]).filter((company) =>
+          Object.values(company).some(
             (value) =>
               value && value.toString().toLowerCase().includes(searchLower)
           )
@@ -482,6 +674,21 @@ const table = () => {
             </th>
           </tr>
         );
+      case "companydata":
+        return (
+          <tr>
+            {commonCheckbox}
+            <th scope="col" className="px-6 py-3">
+              Company ID
+            </th>
+            <th scope="col" className="px-6 py-3">
+              Company Name
+            </th>
+            <th scope="col" className="px-6 py-3">
+              Action
+            </th>
+          </tr>
+        );
       case "usersdata":
         return (
           <tr>
@@ -544,9 +751,6 @@ const table = () => {
               Check-out
             </th>
             <th scope="col" className="px-6 py-3">
-              QR Code
-            </th>
-            <th scope="col" className="px-6 py-3">
               Verification Status
             </th>
             <th scope="col" className="px-6 py-3">
@@ -601,7 +805,7 @@ const table = () => {
 
     const actionLogo = (item: any) => (
       <td className="px-6 py-4">
-        <div className="flex justify-center items-center space-x-4">
+        <div className="flex items-center space-x-4">
           <a
             onClick={() => handleEdit(item)}
             className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
@@ -615,11 +819,18 @@ const table = () => {
             </a>
           )}
           {selectedTable === "visitsdata" && (
-            <a
-              onClick={() => openSafetyPermit(item.visit_id)}
-              className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
-              <Eye className="w-5 h-5" />
-            </a>
+            <>
+              <a
+                onClick={() => openSafetyPermit(item.visit_id)}
+                className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
+                <Eye className="w-5 h-5" />
+              </a>
+              <a
+                onClick={() => openQRCode(item.visit_id)}
+                className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
+                <QrCode className="w-5 h-5" />
+              </a>
+            </>
           )}
         </div>
       </td>
@@ -632,7 +843,7 @@ const table = () => {
           className="bg-white border-b dark:bg-gray-800">
           {commonRowCheckbox(visitor.visitor_id)}
           <td className="px-6 py-4">{visitor.name}</td>
-          <td className="px-6 py-4">{visitor.company_institution}</td>
+          <td className="px-6 py-4">{visitor.company_name}</td>
           <td className="px-6 py-4">{visitor.id_number}</td>
           <td className="px-6 py-4">{visitor.contact_phone}</td>
           <td className="px-6 py-4">{visitor.contact_email}</td>
@@ -715,7 +926,6 @@ const table = () => {
                 })
               : "-"}
           </td>
-          <td className="px-6 py-4">{visit.qr_code}</td>
           <td className="px-6 py-4">
             {visit.verification_status ? "Verified" : "Not Verified"}
           </td>
@@ -736,6 +946,17 @@ const table = () => {
           {actionLogo(teamMember)}
         </tr>
       ));
+    } else if (selectedTable === "companydata") {
+      return (filteredData as Company[]).map((company) => (
+        <tr
+          key={company.company_id}
+          className="bg-white border-b dark:bg-gray-800">
+          {commonRowCheckbox(company.company_id)}
+          <td className="px-6 py-4">{company.company_id}</td>
+          <td className="px-6 py-4">{company.company_name}</td>
+          {actionLogo(company)}
+        </tr>
+      ));
     } else {
       return null;
     }
@@ -744,13 +965,14 @@ const table = () => {
   return (
     <div>
       <div className="flex flex-col sm:flex-row flex-wrap space-y-4 sm:space-y-0 items-center justify-between pb-4">
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-1.5">
           <div className="relative mr-2.5">
             <select
               value={selectedTable}
               onChange={handleTableChange}
               className="block p-2 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white">
               <option value="visitorsdata">Visitor</option>
+              <option value="companydata">Company</option>
               <option value="employeesdata">Employee</option>
               <option value="securitydata">Security</option>
               <option value="usersdata">User</option>
@@ -762,37 +984,44 @@ const table = () => {
             <button
               onClick={handleAdd}
               className="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="4"
-                strokeLinecap="round"
-                strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
+              <Plus className="w-5 h-5" />
             </button>
           )}
           <button
             onClick={handleDelete}
             className="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="3">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19 7l-1 12a2 2 0 01-2 2H8a2 2 0 01-2-2L5 7m5 0V4a1 1 0 011-1h2a1 1 0 011 1v3m-7 0h10"
-              />
-            </svg>
+            <Trash2 className="w-5 h-5" />
           </button>
+          {selectedTable === "employeesdata" && (
+            <>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleCSVFileSelect}
+                accept=".csv"
+                className="hidden"
+              />
+              <button
+                onClick={triggerFileInput}
+                disabled={importing}
+                className="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 flex items-center">
+                <Upload className="w-5 h-5 mr-1" />
+                {importing ? "Importing..." : "Import CSV"}
+              </button>
+              <button
+                onClick={handleExportCSV}
+                className="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 flex items-center">
+                <File className="w-5 h-5 mr-1" />
+                Export CSV
+              </button>
+              <button
+                onClick={downloadTemplate}
+                className="text-white bg-purple-600 hover:bg-purple-700 focus:ring-4 focus:outline-none focus:ring-purple-300 font-medium rounded-lg text-sm px-4 py-2 flex items-center">
+                <Download className="w-5 h-5 mr-1" />
+                Template
+              </button>
+            </>
+          )}
         </div>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 flex items-center ps-3 pointer-events-none">
@@ -800,7 +1029,7 @@ const table = () => {
           </div>
           <input
             type="text"
-            className="block p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-75 bg-gray-50"
+            className="block p-2 ps-10 text-sm text-gray-900 dark:text-white border border-gray-300 rounded-lg w-75 bg-gray-50 dark:bg-gray-900"
             placeholder="Search for items"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -812,14 +1041,31 @@ const table = () => {
         {loading ? (
           <p>Loading...</p>
         ) : (
-          <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700">
+          <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-300">
+            <thead className="text-xs text-gray-700 dark:text-white uppercase bg-gray-50 dark:bg-gray-700">
               {renderTableHeaders()}
             </thead>
             <tbody>{renderTableRows()}</tbody>
           </table>
         )}
       </div>
+      <CSVPreviewModal
+        isOpen={showPreviewModal}
+        onClose={() => {
+          setShowPreviewModal(false);
+          setSelectedFile(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+          }
+        }}
+        data={csvPreviewData}
+        onConfirm={handleCSVImport}
+      />
+      <QRCodeModal
+        isOpen={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        qrCodeImage={qrCodeImage}
+      />
       <AddForm
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

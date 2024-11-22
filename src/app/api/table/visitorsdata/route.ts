@@ -16,13 +16,38 @@ export async function GET(request: Request) {
       orderBy: {
         registration_date: "desc",
       },
+      include: {
+        company: {
+          select: {
+            company_name: true,
+          },
+        },
+      },
     });
 
-    return NextResponse.json(tableData, { status: 200 });
-  } catch (error) {
-    console.error("Error fetching visitors:", error);
+    const companies = await prisma.company.findMany({
+      select: {
+        company_id: true,
+        company_name: true,
+      },
+    });
+
+    const formattedData = tableData.map((visitor) => ({
+      ...visitor,
+      company_name: visitor.company?.company_name || null,
+    }));
+
     return NextResponse.json(
-      { message: "Failed to fetch visitors" },
+      {
+        visitors: formattedData,
+        company: companies,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    return NextResponse.json(
+      { message: "Failed to fetch data" },
       { status: 500 }
     );
   }

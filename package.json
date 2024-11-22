@@ -12,6 +12,7 @@
     "@prisma/client": "^5.20.0",
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
+    "csv-parse": "^5.5.6",
     "flatpickr": "^4.6.13",
     "lucide-react": "^0.453.0",
     "next": "^14.2.14",
@@ -22,6 +23,7 @@
     "react-dom": "^18",
     "react-flatpickr": "^3.10.13",
     "recharts": "^2.13.3",
+    "sharp": "^0.33.5",
     "uuid": "^10.0.0"
   },
   "devDependencies": {

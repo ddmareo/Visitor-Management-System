@@ -55,17 +55,19 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+    <main className="min-h-screen flex flex-col justify-center items-center bg-gray-50 dark:bg-gray-900 p-4">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl p-8 space-y-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-8">
           <div className="text-center space-y-2">
             <div className="flex justify-center mb-4">
               <div className="bg-gray-50 p-3 rounded-full">
                 <CreditCard className="h-6 w-6" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome</h1>
-            <p className="text-gray-500">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Welcome
+            </h1>
+            <p className="text-gray-500 dark:text-gray-300">
               Please enter your NIK (ID Card Number)
             </p>
           </div>
@@ -79,11 +81,12 @@ export default function Home() {
                   value={nik}
                   onChange={handleNIKChange}
                   placeholder="XXXX XXXX XXXX XXXX"
-                  className="w-full px-4 py-3 text-center text-lg tracking-wider border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all duration-200 ease-in-out font-medium"
+                  className="w-full px-4 py-3 text-center text-lg tracking-wider border border-gray-200 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all duration-200 ease-in-out font-medium 
+               dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:focus:ring-gray-400"
                   maxLength={19}
                   required
                 />
-                <div className="absolute inset-0 border-2 border-transparent group-hover:border-gray-800 rounded-lg pointer-events-none transition-all duration-200 ease-in-out"></div>
+                <div className="absolute inset-0 border-2 border-transparent group-hover:border-gray-800 dark:group-hover:border-gray-400 rounded-lg pointer-events-none transition-all duration-200 ease-in-out"></div>
               </div>
 
               {error && (
@@ -96,7 +99,7 @@ export default function Home() {
 
             <button
               type="submit"
-              className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transform transition-all duration-200 ease-in-out hover:scale-[1.02] flex items-center justify-center space-x-2">
+              className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transform transition-all duration-200 ease-in-out hover:scale-[1.02] dark:bg-gray-100 dark:text-black dark:hover:bg-gray-200 flex items-center justify-center space-x-2">
               <span>Continue</span>
               <ArrowRight className="h-5 w-5" />
             </button>

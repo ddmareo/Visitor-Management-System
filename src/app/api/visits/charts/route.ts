@@ -3,6 +3,25 @@ import { NextResponse } from "next/server";
 
 const prisma = new PrismaClient();
 
+const roundToNearestInterval = (time: Date) => {
+  const hours = time.getHours();
+  const minutes = time.getMinutes();
+
+  let roundedMinutes;
+  if (minutes < 15) {
+    roundedMinutes = 0;
+  } else if (minutes >= 15 && minutes < 45) {
+    roundedMinutes = 30;
+  } else {
+    roundedMinutes = 0;
+    time.setHours(hours + 1);
+  }
+
+  return `${String(time.getHours()).padStart(2, "0")}:${String(
+    roundedMinutes
+  ).padStart(2, "0")}`;
+};
+
 const transformData = (data: any[]) => {
   return data.map((item) => {
     const transformed = { ...item };
@@ -18,8 +37,31 @@ const transformData = (data: any[]) => {
     if ("peak_visits" in item) {
       transformed.peak_visits = Number(item.peak_visits);
     }
+
+    if ("check_in_time" in item) {
+      transformed.time = new Date(item.check_in_time).toLocaleTimeString(
+        "en-US",
+        {
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      );
+    }
     return transformed;
   });
+};
+
+const generateTimeSlots = () => {
+  const slots = [];
+  for (let hour = 0; hour < 24; hour++) {
+    for (let minute of [0, 30]) {
+      slots.push(
+        `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
+      );
+    }
+  }
+  return slots;
 };
 
 export async function GET(request: Request) {
@@ -29,6 +71,7 @@ export async function GET(request: Request) {
 
   try {
     let visitsData;
+    let departmentData;
     let timeDistribution;
     let statsData;
 
@@ -51,17 +94,32 @@ export async function GET(request: Request) {
       visitsData = transformData(monthlyData as any[]);
 
       statsData = await prisma.$queryRaw`
-  SELECT
-    (SELECT COUNT(*) FROM visit WHERE entry_start_date >= ${startDate} AND entry_start_date < ${endDate}) AS total_visits,
-    CAST(ROUND(AVG(daily_visits)) AS INTEGER) as average_visits,
-    CAST(MAX(daily_visits) AS INTEGER) as peak_visits
-  FROM (
-    SELECT DATE(entry_start_date), COUNT(*) AS daily_visits
-    FROM visit
-    WHERE entry_start_date >= ${startDate} AND entry_start_date < ${endDate}
-    GROUP BY DATE(entry_start_date)
-  ) AS daily_visits;
-`;
+        SELECT
+          (SELECT COUNT(*) FROM visit WHERE entry_start_date >= ${startDate} AND entry_start_date < ${endDate}) AS total_visits,
+          CAST(ROUND(AVG(daily_visits)) AS INTEGER) as average_visits,
+          CAST(MAX(daily_visits) AS INTEGER) as peak_visits
+        FROM (
+          SELECT DATE(entry_start_date), COUNT(*) AS daily_visits
+          FROM visit
+          WHERE entry_start_date >= ${startDate} AND entry_start_date < ${endDate}
+          GROUP BY DATE(entry_start_date)
+        ) AS daily_visits;
+      `;
+
+      const monthlyDepartmentData = await prisma.$queryRaw`
+        SELECT 
+          e.department,
+          CAST(COUNT(*) AS INTEGER) as visits
+        FROM visit v
+        JOIN employee e ON v.employee_id = e.employee_id
+        WHERE v.entry_start_date >= ${startDate} 
+        AND v.entry_start_date < ${endDate}
+        AND e.department IS NOT NULL
+        GROUP BY e.department
+        ORDER BY visits DESC
+      `;
+
+      departmentData = transformData(monthlyDepartmentData as any[]);
     } else if (period === "yearly") {
       const year = parseInt(date!);
 
@@ -78,36 +136,65 @@ export async function GET(request: Request) {
       visitsData = transformData(yearlyData as any[]);
 
       statsData = await prisma.$queryRaw`
-  SELECT
-    (SELECT COUNT(*) FROM visit WHERE EXTRACT(YEAR FROM entry_start_date) = ${year}) AS total_visits,
-    CAST(ROUND(AVG(monthly_visits)) AS INTEGER) as average_visits,
-    CAST(MAX(monthly_visits) AS INTEGER) as peak_visits
-  FROM (
-    SELECT EXTRACT(MONTH FROM entry_start_date) AS month, COUNT(*) AS monthly_visits
-    FROM visit
-    WHERE EXTRACT(YEAR FROM entry_start_date) = ${year}
-    GROUP BY EXTRACT(MONTH FROM entry_start_date)
-  ) AS monthly_visits;
-`;
+        SELECT
+          (SELECT COUNT(*) FROM visit WHERE EXTRACT(YEAR FROM entry_start_date) = ${year}) AS total_visits,
+          CAST(ROUND(AVG(monthly_visits)) AS INTEGER) as average_visits,
+          CAST(MAX(monthly_visits) AS INTEGER) as peak_visits
+        FROM (
+          SELECT EXTRACT(MONTH FROM entry_start_date) AS month, COUNT(*) AS monthly_visits
+          FROM visit
+          WHERE EXTRACT(YEAR FROM entry_start_date) = ${year}
+          GROUP BY EXTRACT(MONTH FROM entry_start_date)
+        ) AS monthly_visits;
+      `;
+
+      const yearlyDepartmentData = await prisma.$queryRaw`
+        SELECT 
+          e.department,
+          CAST(COUNT(*) AS INTEGER) as visits
+        FROM visit v
+        JOIN employee e ON v.employee_id = e.employee_id
+        WHERE EXTRACT(YEAR FROM v.entry_start_date) = ${year}
+        AND e.department IS NOT NULL
+        GROUP BY e.department
+        ORDER BY visits DESC
+      `;
+
+      departmentData = transformData(yearlyDepartmentData as any[]);
     }
 
     const timeData = await prisma.$queryRaw`
-      SELECT 
-        TO_CHAR(check_in_time, 'HH24:00') as time,
-        CAST(COUNT(*) AS INTEGER) as visits
-      FROM visit
-      WHERE check_in_time IS NOT NULL
-      GROUP BY TO_CHAR(check_in_time, 'HH24:00')
-      ORDER BY time
-    `;
-    timeDistribution = transformData(timeData as any[]);
+    SELECT 
+      check_in_time,
+      COUNT(*) as visits
+    FROM visit
+    WHERE check_in_time IS NOT NULL
+    GROUP BY check_in_time
+    ORDER BY check_in_time
+  `;
 
-    const stats = transformData(statsData as any[])[0];
+    const processedTimeData = (timeData as any[]).reduce((acc: any, curr) => {
+      const time = new Date(curr.check_in_time);
+      const roundedTime = roundToNearestInterval(time);
+
+      if (!acc[roundedTime]) {
+        acc[roundedTime] = 0;
+      }
+      acc[roundedTime] += Number(curr.visits);
+      return acc;
+    }, {});
+
+    const timeSlots = generateTimeSlots();
+    timeDistribution = timeSlots.map((slot) => ({
+      time: slot,
+      visits: processedTimeData[slot] || 0,
+    }));
 
     return NextResponse.json({
       visitsData,
+      departmentData,
       timeDistribution,
-      stats,
+      stats: transformData(statsData as any[])[0],
     });
   } catch (error) {
     console.error("Error fetching visit data:", error);

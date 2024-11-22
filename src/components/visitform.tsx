@@ -60,6 +60,11 @@ const page = () => {
     }
   };
 
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleSearch();
+  };
+
   const handleCheckIn = async () => {
     if (!visitsData?.visit_id) return;
 
@@ -211,11 +216,13 @@ const page = () => {
 
   return (
     <div className="my-8 w-full md:w-2/3 lg:w-1/3 px-4">
-      <form className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mb-6">
         <div>
           <label
             htmlFor="qr_code"
-            className="block mb-2 text-sm font-medium text-gray-700">
+            className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
             QR Code
           </label>
           <div className="flex flex-col sm:flex-row">
@@ -225,11 +232,11 @@ const page = () => {
               name="qr_code"
               value={qrCode}
               onChange={(e) => setQrCode(e.target.value)}
-              className="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              className="flex-1 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
               required
             />
             <button
-              className="mt-2 sm:mt-0 sm:ml-3 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-black rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 active:bg-gray-900"
+              className="mt-2 sm:mt-0 sm:ml-3 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-black dark:bg-gray-700 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 active:bg-gray-900"
               aria-label="Search"
               type="button"
               onClick={handleSearch}>
@@ -237,7 +244,7 @@ const page = () => {
               <span className="sr-only">Search</span>
             </button>
             <button
-              className="mt-2 sm:mt-0 sm:ml-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-black rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 active:bg-gray-900"
+              className="mt-2 sm:mt-0 sm:ml-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-black dark:bg-gray-700 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 active:bg-gray-900"
               aria-label="Open QR Code"
               type="button"
               onClick={() => setShowQrScanner(true)}>
@@ -249,16 +256,18 @@ const page = () => {
       </form>
 
       {visitsData && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-5">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h5 className="text-xl font-semibold text-gray-900">Visit Card</h5>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-5">
+          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+            <h5 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              Visit Card
+            </h5>
           </div>
 
           <div className="p-6">
             <div className="grid md:grid-cols-2 gap-8">
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                  <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
                     Basic Information
                   </h2>
                   <dl className="space-y-2">
@@ -272,7 +281,7 @@ const page = () => {
                         visitsData.id_card ? (
                           <button
                             onClick={openIdCard}
-                            className="text-blue-600 hover:text-blue-800 hover:underline">
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline">
                             View Content
                           </button>
                         ) : (
@@ -283,8 +292,10 @@ const page = () => {
                       <div
                         key={label as string}
                         className="flex justify-between">
-                        <dt className="text-sm text-gray-600">{label}</dt>
-                        <dd className="text-sm font-medium text-gray-900">
+                        <dt className="text-sm text-gray-600 dark:text-gray-400">
+                          {label}
+                        </dt>
+                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {value}
                         </dd>
                       </div>
@@ -293,7 +304,7 @@ const page = () => {
                 </div>
 
                 <div>
-                  <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                  <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
                     Visit Time
                   </h2>
                   <dl className="space-y-2">
@@ -336,8 +347,10 @@ const page = () => {
                       ],
                     ].map(([label, value]) => (
                       <div key={label} className="flex justify-between">
-                        <dt className="text-sm text-gray-600">{label}</dt>
-                        <dd className="text-sm font-medium text-gray-900">
+                        <dt className="text-sm text-gray-600 dark:text-gray-400">
+                          {label}
+                        </dt>
+                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {value}
                         </dd>
                       </div>
@@ -348,7 +361,7 @@ const page = () => {
 
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                  <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
                     Visit Information
                   </h2>
                   <dl className="space-y-2">
@@ -359,7 +372,7 @@ const page = () => {
                         visitsData.safety_permit ? (
                           <button
                             onClick={openSafetyPermit}
-                            className="text-blue-600 hover:text-blue-800 hover:underline">
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline">
                             View Content
                           </button>
                         ) : (
@@ -372,8 +385,10 @@ const page = () => {
                       <div
                         key={label as string}
                         className="flex justify-between">
-                        <dt className="text-sm text-gray-600">{label}</dt>
-                        <dd className="text-sm font-medium text-gray-900">
+                        <dt className="text-sm text-gray-600 dark:text-gray-400">
+                          {label}
+                        </dt>
+                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {value}
                         </dd>
                       </div>
@@ -382,7 +397,7 @@ const page = () => {
                 </div>
 
                 <div>
-                  <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                  <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
                     Other Information
                   </h2>
                   <dl className="space-y-2">
@@ -407,7 +422,7 @@ const page = () => {
                               {visitsData.team_members.map((member, index) => (
                                 <li
                                   key={index}
-                                  className="text-sm font-medium text-gray-900">
+                                  className="text-sm font-medium text-gray-900 dark:text-gray-100">
                                   {member}
                                 </li>
                               ))}
@@ -421,8 +436,10 @@ const page = () => {
                       <div
                         key={label as string}
                         className="flex justify-between">
-                        <dt className="text-sm text-gray-600">{label}</dt>
-                        <dd className="text-sm font-medium text-gray-900">
+                        <dt className="text-sm text-gray-600 dark:text-gray-400">
+                          {label}
+                        </dt>
+                        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {value}
                         </dd>
                       </div>
@@ -433,16 +450,16 @@ const page = () => {
             </div>
           </div>
 
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+          <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
             <div className="flex justify-end">
               {!(visitsData.check_in_time && visitsData.check_out_time) && (
                 <button
-                  className={`inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
+                  className={`inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors ${
                     isCheckinIn || isCheckingOut
                       ? "opacity-50 cursor-not-allowed"
                       : visitsData.check_in_time
-                      ? "bg-red-500 hover:bg-red-600 focus:ring-red-500"
-                      : "bg-green-500 hover:bg-green-600 focus:ring-green-500"
+                      ? "bg-red-500 dark:bg-red-600 hover:bg-red-600 dark:hover:bg-red-700 focus:ring-red-500"
+                      : "bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 focus:ring-green-500"
                   }`}
                   onClick={
                     visitsData.check_in_time ? handleCheckOut : handleCheckIn

@@ -41,7 +41,12 @@ export async function GET(
           select: {
             id_card: true,
             name: true,
-            company_institution: true,
+            company_id: true,
+            company: {
+              select: {
+                company_name: true,
+              },
+            },
           },
         },
         employee: {
@@ -81,7 +86,7 @@ export async function GET(
       visitor_name: visit.visitor?.name || "-",
       employee_name: visit.employee?.name || "-",
       security_name: visit.security?.security_name || "-",
-      company_institution: visit.visitor?.company_institution,
+      company_institution: visit.visitor?.company?.company_name,
       team_members: visit.teammember.map((member) => member.member_name),
       visit_category: mappedCategory,
     };

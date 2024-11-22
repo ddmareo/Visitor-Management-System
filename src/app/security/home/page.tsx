@@ -14,10 +14,8 @@ const page = async () => {
   }
 
   return (
-    <div>
-      <div className="flex justify-center items-center mt-9">
-        <VisitForm />
-      </div>
+    <div className="flex justify-center items-center pt-16 sm:ml-40 bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+      <VisitForm />
     </div>
   );
 };
