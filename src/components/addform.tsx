@@ -118,7 +118,8 @@ const AddForm: React.FC<AddFormProps> = ({
   const handleChange = async (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    let { name, value } = e.target;
+    const { name } = e.target;
+    let { value } = e.target;
 
     if ((name === "employee_id" || name === "security_id") && value === "") {
       value = null as unknown as string;

@@ -3,6 +3,13 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import { compare } from "bcryptjs";
 
+type User = {
+  id: string;
+  username: string;
+  role: string;
+  randomKey: string;
+};
+
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
@@ -57,7 +64,7 @@ export const authOptions: NextAuthOptions = {
     jwt: ({ token, user }) => {
       console.log("JWT Callback", { token, user });
       if (user) {
-        const u = user as unknown as any;
+        const u = user as User;
         return {
           ...token,
           id: u.id,

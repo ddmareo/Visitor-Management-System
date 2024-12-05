@@ -18,12 +18,12 @@ export default function Home() {
     const nikWithoutSpaces = nik.replace(/\s+/g, "");
 
     if (!/^\d+$/.test(nikWithoutSpaces)) {
-      setError("NIK should contain only numbers.");
+      setError("NIK hanya boleh terdiri dari angka.");
       return;
     }
 
     if (nikWithoutSpaces.length !== 16) {
-      setError("NIK must be exactly 16 digits.");
+      setError("NIK harus terdiri dari 16 digit.");
       return;
     }
 
@@ -39,7 +39,7 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Error checking NIK:", error);
-      setError("An error occurred. Please try again later.");
+      setError("Terjadi kesalahan. Silakan coba lagi nanti.");
     }
   };
 
@@ -61,14 +61,14 @@ export default function Home() {
           <div className="text-center space-y-2">
             <div className="flex justify-center mb-4">
               <div className="bg-gray-50 p-3 rounded-full">
-                <CreditCard className="h-6 w-6" />
+                <CreditCard className="h-6 w-6 text-black" />
               </div>
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Welcome
+              Selamat datang
             </h1>
             <p className="text-gray-500 dark:text-gray-300">
-              Please enter your NIK (ID Card Number)
+              Masukkan NIK (Nomor Induk Kependudukan) Anda
             </p>
           </div>
 
@@ -90,8 +90,8 @@ export default function Home() {
               </div>
 
               {error && (
-                <div className="flex items-center space-x-2 text-red-500 bg-red-50 p-3 rounded-lg mt-2">
-                  <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                <div className="flex items-center space-x-2 text-red-500 bg-red-50 dark:text-red-400 dark:bg-red-900 p-3 rounded-lg mt-5">
+                  <AlertCircle className="h-5 w-5" />
                   <p className="text-sm">{error}</p>
                 </div>
               )}
@@ -100,7 +100,7 @@ export default function Home() {
             <button
               type="submit"
               className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transform transition-all duration-200 ease-in-out hover:scale-[1.02] dark:bg-gray-100 dark:text-black dark:hover:bg-gray-200 flex items-center justify-center space-x-2">
-              <span>Continue</span>
+              <span>Lanjutkan</span>
               <ArrowRight className="h-5 w-5" />
             </button>
           </form>

@@ -9,7 +9,7 @@ export async function PUT(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const authResponse = await withAuth(req);
+  const authResponse = await withAuth();
 
   if (authResponse instanceof Response) {
     return authResponse;
@@ -46,12 +46,18 @@ export async function PUT(
         employee_id: data.employee_id,
         security_id: data.security_id,
       },
+      select: {
+        user_id: true,
+        username: true,
+        role: true,
+        employee_id: true,
+        security_id: true,
+      },
     });
 
-    const { password: _, ...userWithoutPassword } = updatedUser;
-
-    return NextResponse.json(userWithoutPassword);
+    return NextResponse.json(updatedUser);
   } catch (error) {
+    console.error("Error updating user", error);
     return NextResponse.json({ error: "Error updating user" }, { status: 500 });
   }
 }

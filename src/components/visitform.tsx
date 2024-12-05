@@ -27,7 +27,7 @@ interface VisitsData {
   team_members?: string;
 }
 
-const page = () => {
+const Page = () => {
   const [qrCode, setQrCode] = useState("");
   const [showQrScanner, setShowQrScanner] = useState(false);
   const [visitsData, setVisitsData] = useState<VisitsData | null>(null);
@@ -495,4 +495,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

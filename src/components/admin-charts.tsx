@@ -11,7 +11,14 @@ import {
   Line,
   ResponsiveContainer,
 } from "recharts";
-import { Calendar, Clock, Users, TrendingUp, Building2 } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  Users,
+  TrendingUp,
+  Building2,
+  Building,
+} from "lucide-react";
 
 type VisitData = {
   day?: string;
@@ -21,6 +28,11 @@ type VisitData = {
 
 type DepartmentData = {
   department: string;
+  visits: number;
+};
+
+type CompanyData = {
+  company: string;
   visits: number;
 };
 
@@ -46,6 +58,7 @@ const VisitorDashboard = () => {
 
   const [visitData, setVisitData] = useState<VisitData[]>([]);
   const [departmentData, setDepartmentData] = useState<DepartmentData[]>([]);
+  const [companyData, setCompanyData] = useState<CompanyData[]>([]);
   const [timeData, setTimeData] = useState<TimeData[]>([]);
   const [stats, setStats] = useState<Stats>({
     total_visits: 0,
@@ -57,6 +70,29 @@ const VisitorDashboard = () => {
 
   const formatXAxis = (tickItem: string) => {
     return tickItem;
+  };
+
+  const AngledXAxisTick = (props: {
+    x: number;
+    y: number;
+    payload: { value: string };
+  }) => {
+    const { x, y, payload } = props;
+    const words = payload.value.split(" ");
+    return (
+      <text
+        x={x}
+        y={y + 20}
+        textAnchor="middle"
+        fill="currentColor"
+        className="text-sm text-gray-600 dark:text-gray-300">
+        {words.map((word, index) => (
+          <tspan key={index} x={x} dy={index ? "1.2em" : 0}>
+            {word}
+          </tspan>
+        ))}
+      </text>
+    );
   };
 
   useEffect(() => {
@@ -89,7 +125,6 @@ const VisitorDashboard = () => {
             }
             setVisitData(fullMonthData);
           } else if (selectedPeriod === "yearly") {
-            const year = parseInt(selectedDate);
             const months = [
               "Jan",
               "Feb",
@@ -121,6 +156,7 @@ const VisitorDashboard = () => {
           setTimeData(data.timeDistribution);
           setStats(data.stats);
           setDepartmentData(data.departmentData || []);
+          setCompanyData(data.companyData || []);
         } else {
           console.error("Failed to fetch data:", data.error);
         }
@@ -279,7 +315,75 @@ const VisitorDashboard = () => {
                     dataKey="department"
                     stroke="currentColor"
                     height={80}
+                    interval={0}
+                    tick={
+                      <AngledXAxisTick
+                        x={0}
+                        y={0}
+                        payload={{
+                          value: "",
+                        }}
+                      />
+                    }
                     className="text-gray-600 dark:text-gray-300"
+                  />
+                  <YAxis
+                    stroke="currentColor"
+                    className="text-gray-600 dark:text-gray-300"
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--tooltip-bg, #fff)",
+                      border: "1px solid var(--tooltip-border, #e5e7eb)",
+                      borderRadius: "0.375rem",
+                      color: "var(--tooltip-text, #111827)",
+                    }}
+                    itemStyle={{
+                      color: "var(--tooltip-text, #111827)",
+                    }}
+                  />
+                  <Bar
+                    dataKey="visits"
+                    fill="currentColor"
+                    className="fill-gray-900 dark:fill-gray-100"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg mb-8">
+          <div className="flex items-center mb-4">
+            <Building className="w-5 h-5 text-gray-700 dark:text-gray-300 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Visits by Company
+            </h2>
+          </div>
+          <div className="h-80">
+            {isLoading ? (
+              <div className="h-full flex items-center justify-center">
+                <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={companyData}>
+                  <XAxis
+                    dataKey="company"
+                    stroke="currentColor"
+                    height={80}
+                    interval={0}
+                    className="text-gray-600 dark:text-gray-300"
+                    tick={
+                      <AngledXAxisTick
+                        x={0}
+                        y={0}
+                        payload={{
+                          value: "",
+                        }}
+                      />
+                    }
                   />
                   <YAxis
                     stroke="currentColor"

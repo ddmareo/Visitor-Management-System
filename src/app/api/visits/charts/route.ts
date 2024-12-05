@@ -55,7 +55,7 @@ const transformData = (data: any[]) => {
 const generateTimeSlots = () => {
   const slots = [];
   for (let hour = 0; hour < 24; hour++) {
-    for (let minute of [0, 30]) {
+    for (const minute of [0, 30]) {
       slots.push(
         `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
       );
@@ -72,6 +72,7 @@ export async function GET(request: Request) {
   try {
     let visitsData;
     let departmentData;
+    let companyData;
     let timeDistribution;
     let statsData;
 
@@ -120,6 +121,47 @@ export async function GET(request: Request) {
       `;
 
       departmentData = transformData(monthlyDepartmentData as any[]);
+
+      const monthlyCompanyData = await prisma.$queryRaw`
+        SELECT 
+          c.company_name as company,
+          CAST(COUNT(*) AS INTEGER) as visits
+        FROM visit v
+        JOIN visitor vi ON v.visitor_id = vi.visitor_id
+        JOIN company c ON vi.company_id = c.company_id
+        WHERE v.entry_start_date >= ${startDate} 
+        AND v.entry_start_date < ${endDate}
+        GROUP BY c.company_name
+        ORDER BY visits DESC
+      `;
+
+      companyData = transformData(monthlyCompanyData as any[]);
+
+      const timeData = await prisma.$queryRaw`
+        SELECT 
+          check_in_time
+        FROM visit
+        WHERE check_in_time IS NOT NULL
+        AND entry_start_date >= ${startDate}
+        AND entry_start_date < ${endDate}
+      `;
+
+      const processedTimeData = (timeData as any[]).reduce((acc: any, curr) => {
+        const time = new Date(curr.check_in_time);
+        const roundedTime = roundToNearestInterval(time);
+
+        if (!acc[roundedTime]) {
+          acc[roundedTime] = 0;
+        }
+        acc[roundedTime] += 1;
+        return acc;
+      }, {});
+
+      const timeSlots = generateTimeSlots();
+      timeDistribution = timeSlots.map((slot) => ({
+        time: slot,
+        visits: processedTimeData[slot] || 0,
+      }));
     } else if (period === "yearly") {
       const year = parseInt(date!);
 
@@ -161,38 +203,51 @@ export async function GET(request: Request) {
       `;
 
       departmentData = transformData(yearlyDepartmentData as any[]);
+
+      const yearlyCompanyData = await prisma.$queryRaw`
+        SELECT 
+          c.company_name as company,
+          CAST(COUNT(*) AS INTEGER) as visits
+        FROM visit v
+        JOIN visitor vi ON v.visitor_id = vi.visitor_id
+        JOIN company c ON vi.company_id = c.company_id
+        WHERE EXTRACT(YEAR FROM v.entry_start_date) = ${year}
+        GROUP BY c.company_name
+        ORDER BY visits DESC
+      `;
+
+      companyData = transformData(yearlyCompanyData as any[]);
+
+      const timeData = await prisma.$queryRaw`
+        SELECT 
+          check_in_time
+        FROM visit
+        WHERE check_in_time IS NOT NULL
+        AND EXTRACT(YEAR FROM entry_start_date) = ${year}
+      `;
+
+      const processedTimeData = (timeData as any[]).reduce((acc: any, curr) => {
+        const time = new Date(curr.check_in_time);
+        const roundedTime = roundToNearestInterval(time);
+
+        if (!acc[roundedTime]) {
+          acc[roundedTime] = 0;
+        }
+        acc[roundedTime] += 1;
+        return acc;
+      }, {});
+
+      const timeSlots = generateTimeSlots();
+      timeDistribution = timeSlots.map((slot) => ({
+        time: slot,
+        visits: processedTimeData[slot] || 0,
+      }));
     }
-
-    const timeData = await prisma.$queryRaw`
-    SELECT 
-      check_in_time,
-      COUNT(*) as visits
-    FROM visit
-    WHERE check_in_time IS NOT NULL
-    GROUP BY check_in_time
-    ORDER BY check_in_time
-  `;
-
-    const processedTimeData = (timeData as any[]).reduce((acc: any, curr) => {
-      const time = new Date(curr.check_in_time);
-      const roundedTime = roundToNearestInterval(time);
-
-      if (!acc[roundedTime]) {
-        acc[roundedTime] = 0;
-      }
-      acc[roundedTime] += Number(curr.visits);
-      return acc;
-    }, {});
-
-    const timeSlots = generateTimeSlots();
-    timeDistribution = timeSlots.map((slot) => ({
-      time: slot,
-      visits: processedTimeData[slot] || 0,
-    }));
 
     return NextResponse.json({
       visitsData,
       departmentData,
+      companyData,
       timeDistribution,
       stats: transformData(statsData as any[])[0],
     });

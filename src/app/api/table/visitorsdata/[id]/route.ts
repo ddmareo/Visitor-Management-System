@@ -8,7 +8,7 @@ export async function PUT(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const authResponse = await withAuth(req);
+  const authResponse = await withAuth();
 
   if (authResponse instanceof Response) {
     return authResponse;
@@ -31,6 +31,7 @@ export async function PUT(
     });
     return NextResponse.json(updatedVisitor);
   } catch (error) {
+    console.error("Error updating visitor", error);
     return NextResponse.json(
       { error: "Error updating visitor" },
       { status: 500 }

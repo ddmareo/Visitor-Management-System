@@ -9,12 +9,6 @@ import QRCode from "qrcode";
 
 const prisma = new PrismaClient();
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 export async function GET() {
   try {
     const employees = await prisma.employee.findMany({

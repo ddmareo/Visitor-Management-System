@@ -4,8 +4,8 @@ import { withAuth } from "@/lib/with-auth";
 
 const prisma = new PrismaClient();
 
-export async function GET(request: Request) {
-  const authResponse = await withAuth(request);
+export async function GET() {
+  const authResponse = await withAuth();
 
   if (authResponse instanceof Response) {
     return authResponse;
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const authResponse = await withAuth(request);
+  const authResponse = await withAuth();
 
   if (authResponse instanceof Response) {
     return authResponse;

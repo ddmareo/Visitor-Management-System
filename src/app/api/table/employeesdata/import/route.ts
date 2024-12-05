@@ -6,7 +6,7 @@ import { withAuth } from "@/lib/with-auth";
 const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
-  const session = await withAuth(req);
+  const session = await withAuth();
 
   if (session instanceof NextResponse) {
     return session;

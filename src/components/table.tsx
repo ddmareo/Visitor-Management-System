@@ -95,7 +95,7 @@ type FormDataType =
   | Visit
   | TeamMember;
 
-const table = () => {
+const Table = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTable, setSelectedTable] = useState("visitorsdata");
   const [tableData, setTableData] = useState<
@@ -1086,4 +1086,4 @@ const table = () => {
   );
 };
 
-export default table;
+export default Table;

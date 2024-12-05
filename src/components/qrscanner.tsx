@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import QrScanner from "qr-scanner";
-import QrFrame from "../assets/qr-frame.svg";
 
 interface QrScannerProps {
   onScanSuccess: (scannedUrl: string) => void;

@@ -11,7 +11,7 @@ interface Company {
   name: string;
 }
 
-const page = () => {
+const Page = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,11 +36,11 @@ const page = () => {
         if (Array.isArray(response.data)) {
           setCompanies(response.data);
         } else {
-          setError("Invalid data format received from server");
+          setError("Format data tidak valid yang diterima dari server");
         }
       } catch (error) {
         console.error("Error fetching companies:", error);
-        setError("Failed to load companies");
+        setError("Gagal memuat perusahaan");
       }
     };
 
@@ -82,12 +82,12 @@ const page = () => {
     e.preventDefault();
 
     if (!selectedFile) {
-      setError("Please select an ID card file");
+      setError("Silakan pilih file kartu identitas");
       return;
     }
 
     if (selectedFile.size > 5 * 1024 * 1024) {
-      setError("File size must be less than 5MB");
+      setError("Ukuran file harus kurang dari 5MB");
       return;
     }
 
@@ -114,11 +114,9 @@ const page = () => {
 
       console.log("Registration successful:", response.data);
       router.push(`/visitor/booking`);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Registration error:", error);
-      setError(
-        error.response?.data?.error || "An error occurred during registration."
-      );
+      setError("Terjadi kesalahan saat pendaftaran.");
     } finally {
       setIsLoading(false);
     }
@@ -126,13 +124,13 @@ const page = () => {
 
   return (
     <main className="min-h-screen flex justify-center items-center bg-gray-50 dark:bg-gray-900 pt-[calc(6rem)] pb-9">
-      <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-lg h-[775px] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-lg">
         <div className="flex flex-col items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Visitor Registration
+            Pendaftaran Pengunjung
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-2">
-            Please fill in your details below
+            Silakan isi detail Anda di bawah ini
           </p>
         </div>
         <form onSubmit={handleSubmit}>
@@ -140,7 +138,7 @@ const page = () => {
             <label
               htmlFor="name"
               className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-              Name
+              Nama Lengkap
             </label>
             <input
               type="text"
@@ -156,7 +154,7 @@ const page = () => {
             <label
               htmlFor="company"
               className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-              Company/Institution
+              Perusahaan/Institusi
             </label>
             <select
               id="company"
@@ -165,8 +163,8 @@ const page = () => {
               onChange={handleChange}
               className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               required>
-              <option value="">Select a company</option>
-              <option value="others">Others</option>
+              <option value="">Pilih perusahaan</option>
+              <option value="others">Lainnya</option>
               {companies.map((company) => (
                 <option key={company.id} value={company.id}>
                   {company.name}
@@ -180,7 +178,7 @@ const page = () => {
               <label
                 htmlFor="newCompany"
                 className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                New Company Name
+                Nama Perusahaan Baru
               </label>
               <input
                 type="text"
@@ -214,7 +212,7 @@ const page = () => {
               <label
                 htmlFor="phone"
                 className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Phone
+                Nomor Telepon
               </label>
               <input
                 type="tel"
@@ -247,7 +245,7 @@ const page = () => {
             <label
               htmlFor="address"
               className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-              Address
+              Alamat Lengkap
             </label>
             <input
               type="text"
@@ -263,7 +261,7 @@ const page = () => {
             <label
               htmlFor="file"
               className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-              Scan of ID Card
+              Pindaian Kartu Identitas (Scan KTP)
             </label>
             <input
               type="file"
@@ -274,7 +272,7 @@ const page = () => {
               required
             />
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Supported formats: JPG, PNG (Max. 5MB)
+              Format yang didukung: JPG, PNG (Maks. 5MB)
             </p>
           </div>
           <div className="flex items-start mb-5">
@@ -291,15 +289,15 @@ const page = () => {
               <label
                 htmlFor="terms"
                 className="text-sm text-gray-600 dark:text-gray-300">
-                I have read and agree to the{" "}
+                Saya telah membaca dan menyetujui{" "}
                 <a
                   className="font-medium text-black hover:text-gray-700 dark:text-white dark:hover:text-gray-300 underline"
                   href="/terms-conditions"
                   target="_blank"
                   rel="noopener noreferrer">
-                  Terms and Conditions
+                  Syarat dan Ketentuan
                 </a>{" "}
-                on this website.
+                yang ada di situs web ini.
               </label>
             </div>
           </div>
@@ -308,12 +306,12 @@ const page = () => {
               type="submit"
               disabled={isLoading}
               className="text-white bg-black hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-500 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:text-black dark:bg-white dark:hover:bg-gray-100 dark:focus:ring-gray-300">
-              {isLoading ? "Registering..." : "Register"}
+              {isLoading ? "Mendaftar..." : "Daftar"}
             </button>
           </div>
 
           {error && (
-            <div className="flex items-center space-x-2 text-red-500 bg-red-50 p-3 rounded-lg mt-5">
+            <div className="flex items-center space-x-2 text-red-500 bg-red-50 dark:text-red-400 dark:bg-red-900 p-3 rounded-lg mt-5">
               <AlertCircle className="h-5 w-5" />
               <p className="text-sm">{error}</p>
             </div>
@@ -324,4 +322,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

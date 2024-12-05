@@ -10,5 +10,7 @@
     } else {
       document.documentElement.classList.remove("dark");
     }
-  } catch (err) {}
+  } catch (err) {
+    console.error("Error updating theme:", err);
+  }
 })();

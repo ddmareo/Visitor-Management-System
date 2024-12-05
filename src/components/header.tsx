@@ -16,6 +16,7 @@ import {
   Smile,
   Moon,
   Sun,
+  HelpCircle,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -85,6 +86,10 @@ const NavbarWithSidebar: React.FC<NavbarProps> = () => {
     router.push("/admin/welcome");
   };
 
+  const handleHelpClick = () => {
+    window.open("/user-manual", "_blank");
+  };
+
   const capitalizeFirstLetter = (string: string | undefined): string => {
     if (!string) return "";
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -147,7 +152,12 @@ const NavbarWithSidebar: React.FC<NavbarProps> = () => {
                 />
               </a>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleHelpClick}
+                className="p-2 text-gray-500 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600">
+                <HelpCircle className="w-6 h-6" />
+              </button>
               <button
                 onClick={toggleTheme}
                 className="p-2 text-gray-500 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
@@ -206,7 +216,7 @@ const NavbarWithSidebar: React.FC<NavbarProps> = () => {
                 <button
                   type="button"
                   onClick={handleLogin}
-                  className="text-white bg-black hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-full text-sm px-5 py-2 dark:text-black dark:bg-gray-100 dark:hover:bg-gray-100 dark:focus:ring-gray-300 dark:border-gray-300">
+                  className="ml-2 text-white bg-black hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-full text-sm px-5 py-2 dark:text-black dark:bg-gray-100 dark:hover:bg-gray-100 dark:focus:ring-gray-300 dark:border-gray-300">
                   Login
                 </button>
               )}

@@ -56,7 +56,7 @@ export async function GET() {
       data: {
         visitorName: recentVisit.visitor.name,
         //company: recentVisit.visitor.company_institution,
-        //checkInTime: recentVisit.check_in_time,
+        checkInTime: recentVisit.check_in_time,
         visitCategory: mappedCategory,
         teamMembers: recentVisit.teammember.map((member) => member.member_name),
       },

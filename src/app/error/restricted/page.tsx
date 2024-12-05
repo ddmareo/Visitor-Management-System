@@ -55,11 +55,11 @@ const Page = () => {
             404
           </h1>
           <p className="mb-4 text-3xl tracking-tight font-bold text-gray-900 dark:text-white">
-            You don't have access to this page.
+            You do not have access to this page.
           </p>
           <p className="mb-8 text-lg font-light text-gray-600 dark:text-gray-300">
             Sorry, this page is restricted. You are either not logged in yet or
-            you are logged in but don't have access to this page.
+            you are logged in but do not have access to this page.
           </p>
           <button
             onClick={handleBackToHome}

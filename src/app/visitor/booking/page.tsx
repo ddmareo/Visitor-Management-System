@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { SecureStorageService } from "@/utils/encryption";
+import { AlertCircle } from "lucide-react";
 
-const page = () => {
+const Page = () => {
   const router = useRouter();
 
   type Employee = {
@@ -74,11 +75,11 @@ const page = () => {
             company: response.data.visitor.company_name,
           });
         } else {
-          setError("Visitor not found");
+          setError("Pengunjung tidak ditemukan");
         }
       } catch (error) {
         console.error("Error fetching visitor details:", error);
-        setError("An error occurred while fetching visitor details.");
+        setError("Terjadi kesalahan saat mengambil detail pengunjung.");
       }
     };
 
@@ -93,7 +94,7 @@ const page = () => {
     const endDate = new Date(formData.entry_end_date);
 
     if (endDate < startDate) {
-      setDateError("End date cannot be before start date");
+      setDateError("Tanggal akhir kunjungan tidak boleh sebelum tanggal mulai");
       return false;
     }
     return true;
@@ -105,14 +106,14 @@ const page = () => {
 
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setFileError("Safety permit file must be less than 5MB");
+        setFileError("Berkas safety permit harus kurang dari 5MB");
         setSafetyPermitFile(null);
         return;
       }
 
       const allowedTypes = ["image/jpeg", "image/png"];
       if (!allowedTypes.includes(file.type)) {
-        setFileError("Only JPEG and PNG files are allowed");
+        setFileError("Hanya file JPEG dan PNG yang diperbolehkan");
         setSafetyPermitFile(null);
         return;
       }
@@ -173,7 +174,7 @@ const page = () => {
       formData.category === "Working__Project___Repair_" &&
       !safetyPermitFile
     ) {
-      setFileError("Safety permit is required for Working (Project & Repair)");
+      setFileError("Safety permit diperlukan untuk Working (Project & Repair)");
       return;
     }
 
@@ -218,11 +219,13 @@ const page = () => {
         );
       } else {
         console.error("QR Code not received in response");
-        alert("Visit booked, but there was an issue generating the QR code.");
+        alert(
+          "Kunjungan telah dipesan, tetapi ada masalah dalam menghasilkan kode QR."
+        );
       }
     } catch (error) {
       console.error("Error booking visit:", error);
-      alert("An error occurred during booking.");
+      alert("Terjadi kesalahan saat melakukan pemesanan.");
     }
   };
 
@@ -233,14 +236,14 @@ const page = () => {
     VIP: "VIP",
   };
   return (
-    <main className="min-h-screen flex justify-center items-center bg-gray-50 dark:bg-gray-900 pt-[calc(62px)]">
-      <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-xl h-[775px] overflow-y-auto">
+    <main className="min-h-screen flex justify-center items-center bg-gray-50 dark:bg-gray-900 pt-[calc(6rem)] pb-9">
+      <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-lg">
         <div className="flex flex-col items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Visit Booking
+            Pemesanan Kunjungan
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-2">
-            Please fill in the visit details below
+            Silakan isi detail kunjungan di bawah ini
           </p>
         </div>
         <form onSubmit={handleSubmit}>
@@ -249,7 +252,7 @@ const page = () => {
               <label
                 htmlFor="name"
                 className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Name
+                Nama Lengkap
               </label>
               <input
                 type="text"
@@ -265,7 +268,7 @@ const page = () => {
               <label
                 htmlFor="company"
                 className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Company/Institution
+                Perusahaan/Institusi
               </label>
               <input
                 type="text"
@@ -282,7 +285,7 @@ const page = () => {
             <label
               htmlFor="team-members"
               className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-              Do you bring team members?
+              Apakah Anda membawa anggota tim?
             </label>
             <div className="bg-gray-50 p-2.5 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 mb-3">
               <div className="flex space-x-4 ml-1">
@@ -296,7 +299,9 @@ const page = () => {
                     className="w-4 h-4 accent-black border-gray-300 focus:ring-black"
                     required
                   />
-                  <span className="ml-2 text-sm dark:text-white">Yes</span>
+                  <span className="ml-2 text-sm text-black dark:text-white">
+                    Ya
+                  </span>
                 </label>
                 <label className="inline-flex items-center">
                   <input
@@ -308,7 +313,9 @@ const page = () => {
                     className="w-4 h-4 accent-black border-gray-300 focus:ring-black"
                     required
                   />
-                  <span className="ml-2 text-sm dark:text-white">No</span>
+                  <span className="ml-2 text-sm text-black dark:text-white">
+                    TIdak
+                  </span>
                 </label>
               </div>
             </div>
@@ -317,7 +324,7 @@ const page = () => {
                 <label
                   htmlFor="team-member-count"
                   className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  Number of team members
+                  Jumlah anggota tim
                 </label>
                 <input
                   type="number"
@@ -334,7 +341,7 @@ const page = () => {
                       <label
                         htmlFor={`team-member-${index}`}
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                        Team Member {index + 1} Name
+                        Nama Anggota Tim {index + 1}
                       </label>
                       <input
                         type="text"
@@ -353,7 +360,7 @@ const page = () => {
             <label
               htmlFor="employee"
               className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-              Employee
+              Karyawan
             </label>
             <select
               id="employee"
@@ -362,7 +369,7 @@ const page = () => {
               onChange={handleInputChange}
               className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               required>
-              <option value="">Select an employee</option>
+              <option value="">Pilih karyawan</option>
               {employees.map((emp) => (
                 <option key={emp.employee_id} value={emp.employee_id}>
                   {emp.name}
@@ -375,7 +382,7 @@ const page = () => {
               <label
                 htmlFor="entry_start_date"
                 className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Entry Start Date
+                Tanggal Mulai Kunjungan
               </label>
               <input
                 type="date"
@@ -391,7 +398,7 @@ const page = () => {
               <label
                 htmlFor="entry_end_date"
                 className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Entry End Date
+                Tanggal Akhir Kunjungan
               </label>
               <input
                 type="date"
@@ -408,7 +415,7 @@ const page = () => {
             <label
               htmlFor="category"
               className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-              Visit Category
+              Kategori Kunjungan
             </label>
             <select
               id="category"
@@ -417,7 +424,7 @@ const page = () => {
               onChange={handleInputChange}
               className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               required>
-              <option value="">Select a category</option>
+              <option value="">Pilih kategori</option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
                   {categoryLabels[cat]}
@@ -448,7 +455,7 @@ const page = () => {
             )}
             {formData.category === "Working__Project___Repair_" && (
               <p className="text-sm text-gray-500 mt-1">
-                Supported formats: JPG, PNG (Max. 5MB)
+                Format yang didukung: JPG, PNG (Maks. 5MB)
               </p>
             )}
           </div>
@@ -457,7 +464,7 @@ const page = () => {
               <label
                 htmlFor="method"
                 className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Entry Method
+                Metode Entri
               </label>
               <select
                 id="method"
@@ -466,7 +473,7 @@ const page = () => {
                 onChange={handleInputChange}
                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                 required>
-                <option value="">Select an entry method</option>
+                <option value="">Memilih metode entri</option>
                 {methods.map((method) => (
                   <option key={method} value={method}>
                     {method}
@@ -480,7 +487,7 @@ const page = () => {
                 <label
                   htmlFor="vehicle"
                   className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  Vehicle Number
+                  Nomor Kendaraan
                 </label>
                 <input
                   type="text"
@@ -498,19 +505,25 @@ const page = () => {
             <button
               type="submit"
               className="text-white bg-black hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-500 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:text-black dark:bg-white dark:hover:bg-gray-100 dark:focus:ring-gray-300">
-              Book Visit
+              Pesan Kunjungan
             </button>
           </div>
           {dateError && (
-            <p className="flex justify-center text-red-500 mt-5 text-sm">
-              {dateError}
-            </p>
+            <div className="flex items-center space-x-2 text-red-500 bg-red-50 dark:text-red-400 dark:bg-red-900 p-3 rounded-lg mt-5">
+              <AlertCircle className="h-5 w-5" />
+              <p className="text-sm">{dateError}</p>
+            </div>
           )}
-          {error && <p className="text-red-500">{error}</p>}
+          {error && (
+            <div className="flex items-center space-x-2 text-red-500 bg-red-50 dark:text-red-400 dark:bg-red-900 p-3 rounded-lg mt-5">
+              <AlertCircle className="h-5 w-5" />
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
         </form>
       </div>
     </main>
   );
 };
 
-export default page;
+export default Page;

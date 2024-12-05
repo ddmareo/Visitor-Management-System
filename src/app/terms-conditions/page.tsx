@@ -17,7 +17,7 @@ const Page = () => {
         <div className="flex items-center gap-3 mb-8">
           <Shield className="w-8 h-8 text-gray-900 dark:text-gray-100 mb-0.5" />
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Visitor Information
+            Informasi Pengunjung
           </h1>
         </div>
 
@@ -26,38 +26,38 @@ const Page = () => {
             <AlertCircle className="w-5 h-5 text-gray-900 dark:text-gray-100" />
             <div className="space-y-3">
               <p className="text-gray-900 dark:text-white font-medium">
-                Please ensure you comply with the following requirements:
+                Pastikan Anda mematuhi persyaratan berikut ini:
               </p>
               <ol className="text-gray-800 dark:text-gray-200 space-y-2 list-decimal ml-4">
                 <li className="pl-2">
                   <p>
-                    Visitor must be guided/supervised by ALVA Plant's Employee
-                    during their stay in the ALVA Plant area.
+                    Pengunjung harus dipandu/diawasi oleh Karyawan ALVA Plant
+                    selama berada di area Pabrik ALVA.
                   </p>
                 </li>
                 <li className="pl-2">
                   <p>
-                    Visitor's information and data provided to ALVA Plant must
-                    be valid and true.
+                    Informasi dan data pengunjung yang diberikan kepada ALVA
+                    Plant harus harus valid dan benar.
                   </p>
                 </li>
                 <li className="pl-2">
                   <p>
-                    Visitor's information and data are under ALVA Plant's
-                    responsibility and will be fully protected from privacy
-                    infringement.
+                    Informasi dan data pengunjung berada di bawah tanggung jawab
+                    ALVA Plant dan akan dilindungi sepenuhnya dari pelanggaran
+                    privasi.
                   </p>
                 </li>
                 <li className="pl-2">
                   <p>
-                    Visitors are required to wear safety equipment (APD) before
-                    entering the production area.
+                    Pengunjung diwajibkan untuk mengenakan perlengkapan
+                    keselamatan (APD) sebelum memasuki area produksi.
                   </p>
                 </li>
                 <li className="pl-2">
                   <p>
-                    Visitor shall agree upon ALVA Plant's Regulation & Willing
-                    to comply with all the requestment, as follow:
+                    Pengunjung harus menyetujui Peraturan ALVA Plant dan
+                    bersedia untuk mematuhi semua permintaan, sebagai berikut:
                   </p>
                 </li>
               </ol>
@@ -69,60 +69,60 @@ const Page = () => {
           <div className="bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors rounded-xl p-6 flex flex-col items-center text-center group border border-gray-200 dark:border-gray-600">
             <IdCard className="w-8 h-8 text-gray-900 dark:text-gray-100 group-hover:text-black dark:group-hover:text-white transition-colors mb-4" />
             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-              1. Trade ID Required
+              1. Kartu Akses Pengunjung
             </h3>
             <p className="text-gray-600 dark:text-gray-300 text-sm">
-              Exchange ID for Visitor Card/Vehicle Access
+              Diperlukan Kartu Akses Pengunjung
             </p>
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors rounded-xl p-6 flex flex-col items-center text-center group border border-gray-200 dark:border-gray-600">
             <Camera className="w-8 h-8 text-gray-900 dark:text-gray-100 group-hover:text-black dark:group-hover:text-white transition-colors mb-4" />
             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-              2. No Photography
+              2. Dilarang Memotret
             </h3>
             <p className="text-gray-600 dark:text-gray-300 text-sm">
-              All cameras and ports must be sealed
+              Semua kamera dan port harus tertutup rapat
             </p>
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors rounded-xl p-6 flex flex-col items-center text-center group border border-gray-200 dark:border-gray-600">
             <Wifi className="w-8 h-8 text-gray-900 dark:text-gray-100 group-hover:text-black dark:group-hover:text-white transition-colors mb-4" />
             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-              3. No Network Access
+              3. Tanpa Akses Jaringan
             </h3>
             <p className="text-gray-600 dark:text-gray-300 text-sm">
-              Do not connect to Data/LAN ports
+              Jangan sambungkan ke port Data/LAN
             </p>
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors rounded-xl p-6 flex flex-col items-center text-center group border border-gray-200 dark:border-gray-600">
             <Trash2 className="w-8 h-8 text-gray-900 dark:text-gray-100 group-hover:text-black dark:group-hover:text-white transition-colors mb-4" />
             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-              4. No Littering
+              4. Tidak Membuang Sampah Sembarangan
             </h3>
             <p className="text-gray-600 dark:text-gray-300 text-sm">
-              Keep the premises clean
+              Jaga kebersihan tempat
             </p>
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors rounded-xl p-6 flex flex-col items-center text-center group border border-gray-200 dark:border-gray-600">
             <Cigarette className="w-8 h-8 text-gray-900 dark:text-gray-100 group-hover:text-black dark:group-hover:text-white transition-colors mb-4" />
             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-              5. No Smoking
+              5. Dilarang Merokok
             </h3>
             <p className="text-gray-600 dark:text-gray-300 text-sm">
-              Smoking is strictly prohibited
+              Dilarang keras merokok
             </p>
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors rounded-xl p-6 flex flex-col items-center text-center group border border-gray-200 dark:border-gray-600">
             <HardHat className="w-8 h-8 text-gray-900 dark:text-gray-100 group-hover:text-black dark:group-hover:text-white transition-colors mb-4" />
             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-              6. Safety Protocol
+              6. Protokol Keamanan
             </h3>
             <p className="text-gray-600 dark:text-gray-300 text-sm">
-              Follow all safety & health guidelines
+              Ikuti semua panduan keselamatan & kesehatan
             </p>
           </div>
         </div>
