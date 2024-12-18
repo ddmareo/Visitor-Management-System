@@ -13,6 +13,7 @@ type User = {
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
+    maxAge: 172800,
   },
   providers: [
     CredentialsProvider({

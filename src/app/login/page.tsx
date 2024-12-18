@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn, useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { User, Lock, AlertCircle } from "lucide-react";
 
@@ -12,27 +12,30 @@ const Page = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
 
+  const redirectBasedOnRole = useCallback(
+    (role: string) => {
+      switch (role) {
+        case "admin":
+          router.push("/admin/dashboard");
+          break;
+        case "user":
+          router.push("/user/home");
+          break;
+        case "security":
+          router.push("/security/home");
+          break;
+        default:
+          router.push("/");
+      }
+    },
+    [router]
+  );
+
   useEffect(() => {
     if (status === "authenticated" && session?.user?.role) {
       redirectBasedOnRole(session.user.role);
     }
-  }, [session, status]);
-
-  const redirectBasedOnRole = (role: string) => {
-    switch (role) {
-      case "admin":
-        router.push("/admin/dashboard");
-        break;
-      case "user":
-        router.push("/user/home");
-        break;
-      case "security":
-        router.push("/security/home");
-        break;
-      default:
-        router.push("/");
-    }
-  };
+  }, [session, status, redirectBasedOnRole]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

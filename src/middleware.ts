@@ -21,6 +21,10 @@ export async function middleware(req: NextRequest) {
     }
   }
   if (token) {
+    if (pathname === "/user-manual") {
+      return NextResponse.next();
+    }
+
     if (pathname === "/") {
       switch (token.role) {
         case "admin":

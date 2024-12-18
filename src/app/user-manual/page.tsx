@@ -19,6 +19,7 @@ import VisitCategory from "@/app/images/visit_category.png";
 import EntryMethod from "@/app/images/entry_method.png";
 import QRPage from "@/app/images/qr_code.png";
 import VisitProcess from "@/app/images/visit_process.png";
+import VisitorRegistration from "@/app/images/visitor_registration.png";
 
 const UserManualPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -43,7 +44,6 @@ const UserManualPage: React.FC = () => {
               akan menampilkan kesalahan.
               <img
                 src={NIKInput.src}
-                alt="Layar Entri Nomor NIK"
                 className="object-contain w-full rounded-lg shadow-md my-3"
               />
             </li>
@@ -54,12 +54,19 @@ const UserManualPage: React.FC = () => {
               pendaftaran dengan benar.
             </li>
             <li>
+              Berikut adalah Halaman Pendaftaran Pengunjung. Silakan isi nama
+              lengkap Anda sebagai langkah pertama untuk mengisi formulir ini.
+              <img
+                src={VisitorRegistration.src}
+                className="object-contain w-full rounded-lg shadow-md my-3"
+              />
+            </li>
+            <li>
               Pada bidang perusahaan/instansi, pilih dari daftar atau pilih
               Lainnya untuk memasukkan nama perusahaan Anda jika tidak tersedia
               dalam daftar.
               <img
                 src={Company.src}
-                alt="Layar Entri Nomor NIK"
                 className="object-contain w-full rounded-lg shadow-md my-3"
               />
             </li>
@@ -69,7 +76,6 @@ const UserManualPage: React.FC = () => {
               di halaman utama.
               <img
                 src={NIKField.src}
-                alt="Layar Entri Nomor NIK"
                 className="object-contain w-full rounded-lg shadow-md my-3"
               />
             </li>
@@ -79,7 +85,6 @@ const UserManualPage: React.FC = () => {
               untuk menyetujui syarat dan ketentuan kami.
               <img
                 src={Checkbox.src}
-                alt="Layar Entri Nomor NIK"
                 className="object-contain w-full rounded-lg shadow-md my-3"
               />
             </li>
@@ -116,7 +121,6 @@ const UserManualPage: React.FC = () => {
               kosong, silakan ulangi proses dari halaman utama.
               <img
                 src={VisitBooking.src}
-                alt="Layar Entri Nomor NIK"
                 className="object-contain w-full rounded-lg shadow-md my-3"
               />
             </li>
@@ -127,7 +131,6 @@ const UserManualPage: React.FC = () => {
               lanjutkan.
               <img
                 src={TeamMember.src}
-                alt="Layar Entri Nomor NIK"
                 className="object-contain w-full rounded-lg shadow-md my-3"
               />
             </li>
@@ -137,7 +140,6 @@ const UserManualPage: React.FC = () => {
               tanggal kunjungan Anda.
               <img
                 src={EmployeeEntry.src}
-                alt="Layar Entri Nomor NIK"
                 className="object-contain w-full rounded-lg shadow-md my-3"
               />
             </li>
@@ -147,7 +149,6 @@ const UserManualPage: React.FC = () => {
               wajib. Jika tidak, tidak diperlukan.
               <img
                 src={VisitCategory.src}
-                alt="Layar Entri Nomor NIK"
                 className="object-contain w-full rounded-lg shadow-md my-3"
               />
             </li>
@@ -158,7 +159,6 @@ const UserManualPage: React.FC = () => {
               (Berjalan), opsi ini tidak akan tersedia.
               <img
                 src={EntryMethod.src}
-                alt="Layar Entri Nomor NIK"
                 className="object-contain w-full rounded-lg shadow-md my-3"
               />
             </li>
@@ -170,7 +170,6 @@ const UserManualPage: React.FC = () => {
               untuk proses kunjungan, jadi pastikan membawanya.
               <img
                 src={QRPage.src}
-                alt="Layar Entri Nomor NIK"
                 className="object-contain w-full rounded-lg shadow-md my-3"
               />
             </li>
@@ -188,7 +187,6 @@ const UserManualPage: React.FC = () => {
           </p>
           <img
             src={VisitProcess.src}
-            alt="Layar Proses Kunjungan"
             className="object-contain w-full rounded-lg shadow-md my-3"
           />
         </>

@@ -1,6 +1,10 @@
+export const dynamic = "force-dynamic";
+
 import { PrismaClient } from "@prisma/client";
+import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { format } from "date-fns-tz";
+import { authOptions } from "@/lib/auth";
+import { format, toZonedTime } from "date-fns-tz";
 
 const prisma = new PrismaClient();
 
@@ -12,20 +16,27 @@ const visitCategoryMapping = {
 } as const;
 
 export async function GET() {
+  const session = await getServerSession(authOptions);
+
+  if (!session || session?.user?.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const jakartaTimeZone = "Asia/Jakarta";
-    const today = new Date();
-    const formattedToday = format(today, "yyyy-MM-dd", {
+    const todayInJakarta = toZonedTime(new Date(), jakartaTimeZone);
+    const formattedToday = format(todayInJakarta, "yyyy-MM-dd", {
       timeZone: jakartaTimeZone,
     });
+
+    const startOfDay = new Date(formattedToday);
+    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
     const visits = await prisma.visit.findMany({
       where: {
         entry_start_date: {
-          gte: new Date(formattedToday),
-          lt: new Date(
-            new Date(formattedToday).getTime() + 24 * 60 * 60 * 1000
-          ),
+          gte: startOfDay,
+          lt: endOfDay,
         },
         visitor_id: {
           not: null,

@@ -59,7 +59,7 @@ const WelcomePage = () => {
     }
   }, []);
 
-  const fetchRecentVisitor = async () => {
+  const fetchRecentVisitor = useCallback(async () => {
     try {
       const response = await axios.get("/api/visits/welcome");
       const newVisitor = response.data.data;
@@ -73,9 +73,9 @@ const WelcomePage = () => {
       setError("Failed to fetch visitor information");
       console.error("Error fetching visitor:", err);
     }
-  };
+  }, [speakVisitorInfo]);
 
-  const fetchVisitorList = async () => {
+  const fetchVisitorList = useCallback(async () => {
     try {
       const response = await axios.get("/api/visits/list-welcome");
       setVisitorList(response.data.data);
@@ -84,7 +84,7 @@ const WelcomePage = () => {
       setError("Failed to fetch visitor list");
       console.error("Error fetching visitors:", err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const hour = time.getHours();
@@ -94,7 +94,7 @@ const WelcomePage = () => {
 
     const timer = setInterval(() => setTime(new Date()), 60000);
     return () => clearInterval(timer);
-  }, []);
+  }, [time]);
 
   useEffect(() => {
     if (mode === "auto") {
@@ -106,7 +106,7 @@ const WelcomePage = () => {
     } else {
       fetchVisitorList();
     }
-  }, [mode]);
+  }, [mode, fetchRecentVisitor, fetchVisitorList]);
 
   useEffect(() => {
     if (mode === "manual" && visitorList.length > 0) {
