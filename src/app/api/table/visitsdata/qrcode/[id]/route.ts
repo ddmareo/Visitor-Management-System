@@ -7,13 +7,16 @@ import QRCode from "qrcode";
 const prisma = new PrismaClient();
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== "admin") {
+    if (
+      !session ||
+      (session.user.role !== "admin" && session.user.role !== "sec_admin")
+    ) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 

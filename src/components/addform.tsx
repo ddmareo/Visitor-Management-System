@@ -377,6 +377,7 @@ const AddForm: React.FC<AddFormProps> = ({
                 required>
                 <option value="">Select role</option>
                 <option value="admin">Admin</option>
+                <option value="sec_admin">Sec Admin</option>
                 <option value="user">User</option>
                 <option value="security">Security</option>
               </select>

@@ -96,7 +96,8 @@ const NavbarWithSidebar: React.FC<NavbarProps> = () => {
   };
 
   const isSecurity = session?.user?.role === "security";
-  const isAdmin = session?.user?.role === "admin";
+  const isAdmin =
+    session?.user?.role === "admin" || session?.user?.role === "sec_admin";
   const isAuthenticated = status === "authenticated";
 
   useEffect(() => {

@@ -35,7 +35,6 @@ const Page = () => {
   const [formData, setFormData] = useState({
     employee: 0,
     entry_start_date: "",
-    entry_end_date: "",
     category: "",
     method: "",
     vehicle: "",
@@ -89,17 +88,6 @@ const Page = () => {
     }
   }, [nik]);
 
-  const validateDates = (): boolean => {
-    const startDate = new Date(formData.entry_start_date);
-    const endDate = new Date(formData.entry_end_date);
-
-    if (endDate < startDate) {
-      setDateError("Tanggal akhir kunjungan tidak boleh sebelum tanggal mulai");
-      return false;
-    }
-    return true;
-  };
-
   const handleSafetyPermitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFileError(null);
     const file = e.target.files?.[0];
@@ -130,10 +118,6 @@ const Page = () => {
     const parsedValue = name === "employee" ? parseInt(value, 10) : value;
 
     setFormData({ ...formData, [name]: parsedValue });
-
-    if (name === "entry_start_date" || name === "entry_end_date") {
-      setDateError("");
-    }
   };
 
   const handleTeamChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -169,6 +153,16 @@ const Page = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setDateError("");
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const entryDate = new Date(formData.entry_start_date);
+
+    if (entryDate < today) {
+      setDateError("Tanggal mulai kunjungan tidak boleh sebelum hari ini.");
+      return;
+    }
 
     if (
       formData.category === "Working__Project___Repair_" &&
@@ -178,19 +172,13 @@ const Page = () => {
       return;
     }
 
-    if (!validateDates()) {
-      return;
-    }
-
     const isoEntryDate = new Date(formData.entry_start_date).toISOString();
-    const isoEndDate = new Date(formData.entry_end_date).toISOString();
 
     try {
       const formDataToSubmit = new FormData();
       formDataToSubmit.append("visitor", nik || "");
       formDataToSubmit.append("employee", formData.employee.toString());
       formDataToSubmit.append("entry_start_date", isoEntryDate);
-      formDataToSubmit.append("entry_end_date", isoEndDate);
       formDataToSubmit.append("category", formData.category);
       formDataToSubmit.append("method", formData.method);
       formDataToSubmit.append("vehicle", formData.vehicle);
@@ -235,6 +223,13 @@ const Page = () => {
     Working__Project___Repair_: "Working (Project & Repair)",
     VIP: "VIP",
   };
+
+  const methodLabels: Record<string, string> = {
+    Walking: "Walking",
+    Vehicle_Roda_Dua: "Vehicle (Roda Dua)",
+    Vehicle_Roda_Empat: "Vehicle (Roda Empat)",
+  };
+
   return (
     <main className="min-h-screen flex justify-center items-center bg-gray-50 dark:bg-gray-900 pt-[calc(6rem)] pb-9">
       <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-md w-full max-w-lg">
@@ -377,39 +372,21 @@ const Page = () => {
               ))}
             </select>
           </div>
-          <div className="flex mb-5 space-x-2">
-            <div className="w-full">
-              <label
-                htmlFor="entry_start_date"
-                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Tanggal Mulai Kunjungan
-              </label>
-              <input
-                type="date"
-                id="entry_start_date"
-                name="entry_start_date"
-                value={formData.entry_start_date}
-                onChange={handleInputChange}
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                required
-              />
-            </div>
-            <div className="w-full">
-              <label
-                htmlFor="entry_end_date"
-                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Tanggal Akhir Kunjungan
-              </label>
-              <input
-                type="date"
-                id="entry_end_date"
-                name="entry_end_date"
-                value={formData.entry_end_date}
-                onChange={handleInputChange}
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                required
-              />
-            </div>
+          <div className="mb-5">
+            <label
+              htmlFor="entry_start_date"
+              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+              Tanggal Mulai Kunjungan
+            </label>
+            <input
+              type="date"
+              id="entry_start_date"
+              name="entry_start_date"
+              value={formData.entry_start_date}
+              onChange={handleInputChange}
+              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              required
+            />
           </div>
           <div className="mb-5">
             <label
@@ -476,13 +453,14 @@ const Page = () => {
                 <option value="">Memilih metode entri</option>
                 {methods.map((method) => (
                   <option key={method} value={method}>
-                    {method}
+                    {methodLabels[method]}
                   </option>
                 ))}
               </select>
             </div>
 
-            {formData.method === "vehicle" && (
+            {(formData.method === "Vehicle_Roda_Dua" ||
+              formData.method === "Vehicle_Roda_Empat") && (
               <div className="w-full">
                 <label
                   htmlFor="vehicle"

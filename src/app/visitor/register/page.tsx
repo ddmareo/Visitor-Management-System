@@ -16,6 +16,7 @@ const Page = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [showNewCompanyField, setShowNewCompanyField] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState("");
@@ -28,6 +29,80 @@ const Page = () => {
     email: "",
     address: "",
   });
+
+  const createWatermarkSVG = (width: number, height: number) => {
+    const fontSize = Math.min(width, height) * 0.1;
+    const spacing = fontSize * 2;
+
+    let svgContent = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+        <defs>
+          <style>
+            text { font-family: Arial, sans-serif; }
+          </style>
+        </defs>
+    `;
+
+    for (let x = -spacing; x < width + spacing; x += spacing * 1.5) {
+      for (let y = -spacing; y < height + spacing; y += spacing * 1.5) {
+        const rotationAngle = -30 + (Math.random() * 20 - 10);
+        svgContent += `
+          <text 
+            x="${x}" 
+            y="${y}" 
+            font-size="${fontSize}" 
+            font-weight="bold" 
+            fill="rgba(0, 0, 0, 0.3)" 
+            text-anchor="middle" 
+            dominant-baseline="middle" 
+            transform="rotate(${rotationAngle} ${x} ${y})">
+            UNTUK ALVA
+          </text>`;
+      }
+    }
+    svgContent += "</svg>";
+    return svgContent.trim();
+  };
+
+  const createWatermarkedPreview = async (file: File) => {
+    const img = new Image();
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    try {
+      const imageUrl = URL.createObjectURL(file);
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = imageUrl;
+      });
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      ctx?.drawImage(img, 0, 0);
+
+      const watermarkSvg = createWatermarkSVG(img.width, img.height);
+      const watermarkUrl = `data:image/svg+xml;base64,${btoa(watermarkSvg)}`;
+
+      const watermarkImg = new Image();
+      await new Promise((resolve, reject) => {
+        watermarkImg.onload = resolve;
+        watermarkImg.onerror = reject;
+        watermarkImg.src = watermarkUrl;
+      });
+
+      ctx?.drawImage(watermarkImg, 0, 0);
+
+      const previewDataUrl = canvas.toDataURL("image/jpeg");
+      setPreviewUrl(previewDataUrl);
+
+      URL.revokeObjectURL(imageUrl);
+    } catch (error) {
+      console.error("Error creating preview:", error);
+      setError("Failed to generate preview");
+    }
+  };
 
   useEffect(() => {
     const fetchCompanies = async () => {
@@ -70,11 +145,12 @@ const Page = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setSelectedFile(file);
       setError(null);
+      await createWatermarkedPreview(file);
     }
   };
 
@@ -274,6 +350,24 @@ const Page = () => {
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Format yang didukung: JPG, PNG (Maks. 5MB)
             </p>
+
+            {previewUrl && (
+              <div className="mt-4">
+                <div className="max-w-md mx-auto bg-gray-100 dark:bg-gray-700 p-4 shadow-md rounded-lg border border-gray-300 dark:border-gray-600">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mb-3.5">
+                    Hasil pindaian KTP Anda akan diberi watermark seperti yang
+                    terlihat pada preview di bawah ini.
+                  </p>
+                  <div className="relative border border-gray-300 rounded-lg overflow-hidden">
+                    <img
+                      src={previewUrl}
+                      alt="Preview"
+                      className="w-full h-auto"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex items-start mb-5">
             <div className="flex items-center h-5">

@@ -48,7 +48,6 @@ interface UsersData {
 interface VisitsData {
   visit_category: string;
   entry_start_date: string;
-  entry_end_date: string;
   entry_method: string;
   vehicle_number?: string;
 }
@@ -117,7 +116,6 @@ const EditForm: React.FC<EditFormProps> = ({
         setFormData({
           ...initialData,
           entry_start_date: formatDateForInput(visits.entry_start_date),
-          entry_end_date: formatDateForInput(visits.entry_end_date),
         });
       } else {
         setFormData(initialData);
@@ -195,7 +193,6 @@ const EditForm: React.FC<EditFormProps> = ({
       const submissionData = {
         ...formData,
         entry_start_date: formatDateForSubmission(visitsData.entry_start_date),
-        entry_end_date: formatDateForSubmission(visitsData.entry_end_date),
       };
       onSubmit(submissionData);
     } else {
@@ -461,6 +458,7 @@ const EditForm: React.FC<EditFormProps> = ({
                 required>
                 <option value="">Select role</option>
                 <option value="admin">Admin</option>
+                <option value="sec_admin">Sec Admin</option>
                 <option value="user">User</option>
                 <option value="security">Security</option>
               </select>
@@ -545,19 +543,6 @@ const EditForm: React.FC<EditFormProps> = ({
               />
             </div>
             <div className="mb-4">
-              <label htmlFor="entry_end_date" className={labelClass}>
-                Entry End Date
-              </label>
-              <input
-                type="date"
-                id="entry_end_date"
-                name="entry_end_date"
-                value={(formData as VisitsData)?.entry_end_date || ""}
-                className={inputClass}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="mb-4">
               <label htmlFor="entry_method" className={labelClass}>
                 Entry Method
               </label>
@@ -569,8 +554,9 @@ const EditForm: React.FC<EditFormProps> = ({
                 onChange={handleChange}
                 required>
                 <option value="">Select method</option>
-                <option value="walking">Walking</option>
-                <option value="vehicle">Vehicle</option>
+                <option value="Walking">Walking</option>
+                <option value="Vehicle_Roda_Dua">Vehicle (Roda Dua)</option>
+                <option value="Vehicle_Roda_Empat">Vehicle (Roda Empat)</option>
               </select>
             </div>
             <div className="mb-4">

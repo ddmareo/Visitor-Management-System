@@ -87,7 +87,7 @@ export async function GET(request: Request) {
           CAST(COUNT(*) AS INTEGER) as visits
         FROM visit
         WHERE entry_start_date >= ${startDate} 
-        AND entry_start_date < ${endDate}
+        AND entry_start_date <= ${endDate}
         GROUP BY DATE(entry_start_date)
         ORDER BY day
       `;
@@ -96,13 +96,13 @@ export async function GET(request: Request) {
 
       statsData = await prisma.$queryRaw`
         SELECT
-          (SELECT COUNT(*) FROM visit WHERE entry_start_date >= ${startDate} AND entry_start_date < ${endDate}) AS total_visits,
+          (SELECT COUNT(*) FROM visit WHERE entry_start_date >= ${startDate} AND entry_start_date <= ${endDate}) AS total_visits,
           CAST(ROUND(AVG(daily_visits)) AS INTEGER) as average_visits,
           CAST(MAX(daily_visits) AS INTEGER) as peak_visits
         FROM (
           SELECT DATE(entry_start_date), COUNT(*) AS daily_visits
           FROM visit
-          WHERE entry_start_date >= ${startDate} AND entry_start_date < ${endDate}
+          WHERE entry_start_date >= ${startDate} AND entry_start_date <= ${endDate}
           GROUP BY DATE(entry_start_date)
         ) AS daily_visits;
       `;
@@ -114,7 +114,7 @@ export async function GET(request: Request) {
         FROM visit v
         JOIN employee e ON v.employee_id = e.employee_id
         WHERE v.entry_start_date >= ${startDate} 
-        AND v.entry_start_date < ${endDate}
+        AND v.entry_start_date <= ${endDate}
         AND e.department IS NOT NULL
         GROUP BY e.department
         ORDER BY visits DESC
@@ -130,7 +130,7 @@ export async function GET(request: Request) {
         JOIN visitor vi ON v.visitor_id = vi.visitor_id
         JOIN company c ON vi.company_id = c.company_id
         WHERE v.entry_start_date >= ${startDate} 
-        AND v.entry_start_date < ${endDate}
+        AND v.entry_start_date <= ${endDate}
         GROUP BY c.company_name
         ORDER BY visits DESC
       `;
@@ -143,7 +143,7 @@ export async function GET(request: Request) {
         FROM visit
         WHERE check_in_time IS NOT NULL
         AND entry_start_date >= ${startDate}
-        AND entry_start_date < ${endDate}
+        AND entry_start_date <= ${endDate}
       `;
 
       const processedTimeData = (timeData as any[]).reduce((acc: any, curr) => {

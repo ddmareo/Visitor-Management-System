@@ -14,7 +14,6 @@ interface VisitsData {
   security_name?: string;
   id_card?: string;
   entry_start_date: string;
-  entry_end_date: string;
   check_in_time: string;
   check_out_time: string;
   visit_category: string;
@@ -214,6 +213,12 @@ const Page = () => {
     }
   };
 
+  const methodLabels: Record<string, string> = {
+    Walking: "Walking",
+    Vehicle_Roda_Dua: "Vehicle (Roda Dua)",
+    Vehicle_Roda_Empat: "Vehicle (Roda Empat)",
+  };
+
   return (
     <div className="my-8 w-full md:w-2/3 lg:w-1/3 px-4">
       <form
@@ -316,12 +321,6 @@ const Page = () => {
                         ).toLocaleDateString("en-GB"),
                       ],
                       [
-                        "Entry End Date",
-                        new Date(visitsData.entry_end_date).toLocaleDateString(
-                          "en-GB"
-                        ),
-                      ],
-                      [
                         "Check-In",
                         visitsData.check_in_time
                           ? new Date(
@@ -379,7 +378,7 @@ const Page = () => {
                           "-"
                         ),
                       ],
-                      ["Entry Method", visitsData.entry_method],
+                      ["Entry Method", methodLabels[visitsData.entry_method]],
                       ["Vehicle Number", visitsData.vehicle_number || "-"],
                     ].map(([label, value]) => (
                       <div

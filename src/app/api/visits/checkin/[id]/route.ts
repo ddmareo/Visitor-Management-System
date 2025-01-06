@@ -2,11 +2,12 @@ import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
+import { sendNotification } from "@/app/api/notifications/route";
 
 const prisma = new PrismaClient();
 
 export async function PUT(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -71,6 +72,19 @@ export async function PUT(
         teammember: true,
       },
     });
+
+    if (updatedVisit.employee_id) {
+      const employeeUser = await prisma.users.findFirst({
+        where: {
+          employee_id: updatedVisit.employee_id,
+        },
+      });
+
+      if (employeeUser) {
+        const message = `${updatedVisit.visitor?.name} has checked in for their visit.`;
+        await sendNotification(employeeUser.user_id, message);
+      }
+    }
 
     return NextResponse.json(updatedVisit);
   } catch (error) {

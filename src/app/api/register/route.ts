@@ -63,7 +63,7 @@ export async function POST(request: Request) {
                 text-anchor="middle" 
                 alignment-baseline="middle" 
                 transform="rotate(${rotationAngle} ${x} ${y})">
-                UNTUK ALVA PLANT
+                UNTUK ALVA
               </text>`;
             }
           }

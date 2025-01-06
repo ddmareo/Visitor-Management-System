@@ -38,7 +38,6 @@ export async function POST(request: Request) {
     const entry_start_date = new Date(
       formData.get("entry_start_date") as string
     );
-    const entry_end_date = new Date(formData.get("entry_end_date") as string);
     const category = formData.get("category") as new_visit_category_enum;
     const method = formData.get("method") as entry_method_enum;
     const vehicle = formData.get("vehicle") as string;
@@ -55,13 +54,7 @@ export async function POST(request: Request) {
       teammembers = JSON.parse(teammembersData as string);
     }
 
-    if (
-      !employee ||
-      !entry_start_date ||
-      !entry_end_date ||
-      !category ||
-      !method
-    ) {
+    if (!employee || !entry_start_date || !category || !method) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -114,10 +107,12 @@ export async function POST(request: Request) {
         visitor_id,
         employee_id: employee,
         entry_start_date: entry_start_date,
-        entry_end_date: entry_end_date,
         visit_category: category,
         entry_method: method,
-        vehicle_number: method === "vehicle" ? vehicle : null,
+        vehicle_number:
+          method === "Vehicle_Roda_Dua" || method === "Vehicle_Roda_Empat"
+            ? vehicle
+            : null,
         team_members_quantity: teammemberscount || 0,
         qr_code: qrCodeUUID,
         brings_team: brings_team,

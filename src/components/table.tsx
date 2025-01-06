@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
 import {
   Search,
   Eye,
@@ -53,7 +54,7 @@ interface Users {
   user_id: string;
   username: string;
   password: string;
-  role: "admin" | "user" | "security";
+  role: "admin" | "user" | "security" | "sec_admin";
   employee_name?: string | null;
   security_name?: string | null;
 }
@@ -63,14 +64,9 @@ interface Visit {
   visitor_name?: string;
   employee_name?: string;
   security_name?: string;
-  visit_category:
-    | "Meeting___Visits"
-    | "Delivery"
-    | "Working__Project___Repair_"
-    | "VIP";
+  visit_category: string;
   entry_start_date: string;
-  entry_end_date: string;
-  entry_method: "walking" | "vehicle";
+  entry_method: string;
   vehicle_number?: string | null;
   check_in_time?: string | null;
   check_out_time?: string | null;
@@ -121,6 +117,9 @@ const Table = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrCodeImage, setQRCodeImage] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const { data: session } = useSession();
 
   const downloadTemplate = () => {
     const templateData = `name,email,phone,department,position
@@ -519,13 +518,34 @@ const Table = () => {
   };
 
   const filterData = () => {
-    if (!searchTerm) return tableData;
+    if (!searchTerm && !startDate && !endDate) return tableData;
 
     const searchLower = searchTerm.toLowerCase();
+    let filteredResults = tableData;
+
+    // Date range filter for visits table
+    if (selectedTable === "visitsdata" && (startDate || endDate)) {
+      filteredResults = (filteredResults as Visit[]).filter((visit) => {
+        const visitDate = new Date(visit.entry_start_date);
+        const start = startDate ? new Date(startDate) : null;
+        const end = endDate ? new Date(endDate) : null;
+
+        if (start && end) {
+          return visitDate >= start && visitDate <= end;
+        } else if (start) {
+          return visitDate >= start;
+        } else if (end) {
+          return visitDate <= end;
+        }
+        return true;
+      });
+    }
+
+    if (!searchTerm) return filteredResults;
 
     switch (selectedTable) {
       case "visitorsdata":
-        return (tableData as Visitor[]).filter((visitor) =>
+        return (filteredResults as Visitor[]).filter((visitor) =>
           Object.values(visitor).some(
             (value) =>
               value && value.toString().toLowerCase().includes(searchLower)
@@ -533,7 +553,7 @@ const Table = () => {
         );
 
       case "companydata":
-        return (tableData as Company[]).filter((company) =>
+        return (filteredResults as Company[]).filter((company) =>
           Object.values(company).some(
             (value) =>
               value && value.toString().toLowerCase().includes(searchLower)
@@ -541,7 +561,7 @@ const Table = () => {
         );
 
       case "employeesdata":
-        return (tableData as Employee[]).filter((employee) =>
+        return (filteredResults as Employee[]).filter((employee) =>
           Object.values(employee).some(
             (value) =>
               value && value.toString().toLowerCase().includes(searchLower)
@@ -549,7 +569,7 @@ const Table = () => {
         );
 
       case "securitydata":
-        return (tableData as Security[]).filter((security) =>
+        return (filteredResults as Security[]).filter((security) =>
           Object.values(security).some(
             (value) =>
               value && value.toString().toLowerCase().includes(searchLower)
@@ -557,7 +577,7 @@ const Table = () => {
         );
 
       case "usersdata":
-        return (tableData as Users[]).filter((user) =>
+        return (filteredResults as Users[]).filter((user) =>
           Object.values(user)
             .filter((value) => value !== "password")
             .some(
@@ -567,7 +587,7 @@ const Table = () => {
         );
 
       case "visitsdata":
-        return (tableData as Visit[]).filter((visit) =>
+        return (filteredResults as Visit[]).filter((visit) =>
           Object.values(visit).some(
             (value) =>
               value && value.toString().toLowerCase().includes(searchLower)
@@ -575,7 +595,7 @@ const Table = () => {
         );
 
       case "teammembersdata":
-        return (tableData as TeamMember[]).filter((member) =>
+        return (filteredResults as TeamMember[]).filter((member) =>
           Object.values(member).some(
             (value) =>
               value && value.toString().toLowerCase().includes(searchLower)
@@ -583,8 +603,44 @@ const Table = () => {
         );
 
       default:
-        return tableData;
+        return filteredResults;
     }
+  };
+
+  const renderDateRangePicker = () => {
+    if (selectedTable !== "visitsdata") return null;
+
+    return (
+      <div className="flex items-center space-x-2">
+        <div className="flex items-center">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="block p-2 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white"
+          />
+        </div>
+        <span className="text-gray-500">to</span>
+        <div className="flex items-center">
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="block p-2 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white"
+          />
+        </div>
+        {(startDate || endDate) && (
+          <button
+            onClick={() => {
+              setStartDate("");
+              setEndDate("");
+            }}
+            className="text-sm text-red-600 hover:text-red-800">
+            Clear
+          </button>
+        )}
+      </div>
+    );
   };
 
   const renderTableHeaders = () => {
@@ -736,9 +792,6 @@ const Table = () => {
               Entry Start Date
             </th>
             <th scope="col" className="px-6 py-3">
-              Entry End Date
-            </th>
-            <th scope="col" className="px-6 py-3">
               Entry Method
             </th>
             <th scope="col" className="px-6 py-3">
@@ -776,9 +829,6 @@ const Table = () => {
             </th>
             <th scope="col" className="px-6 py-3">
               Member Name
-            </th>
-            <th scope="col" className="px-6 py-3">
-              Action
             </th>
           </tr>
         );
@@ -820,11 +870,13 @@ const Table = () => {
           )}
           {selectedTable === "visitsdata" && (
             <>
-              <a
-                onClick={() => openSafetyPermit(item.visit_id)}
-                className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
-                <Eye className="w-5 h-5" />
-              </a>
+              {item.visit_category === "Working (Project & Repair)" && (
+                <a
+                  onClick={() => openSafetyPermit(item.visit_id)}
+                  className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
+                  <Eye className="w-5 h-5" />
+                </a>
+              )}
               <a
                 onClick={() => openQRCode(item.visit_id)}
                 className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
@@ -903,10 +955,7 @@ const Table = () => {
           <td className="px-6 py-4">
             {new Date(visit.entry_start_date).toLocaleDateString("en-GB")}
           </td>
-          <td className="px-6 py-4">
-            {new Date(visit.entry_end_date).toLocaleDateString("en-GB")}
-          </td>
-          <td className="px-6 py-4">{visit.entry_method}</td>
+          <td className="px-6 py-4">{methodLabels[visit.entry_method]}</td>
           <td className="px-6 py-4">{visit.vehicle_number}</td>
           <td className="px-6 py-4">
             {visit.check_in_time
@@ -943,7 +992,6 @@ const Table = () => {
           <td className="px-6 py-4">{teamMember.team_member_id}</td>
           <td className="px-6 py-4">{teamMember.visit_id}</td>
           <td className="px-6 py-4">{teamMember.member_name}</td>
-          {actionLogo(teamMember)}
         </tr>
       ));
     } else if (selectedTable === "companydata") {
@@ -962,6 +1010,12 @@ const Table = () => {
     }
   };
 
+  const methodLabels: Record<string, string> = {
+    Walking: "Walking",
+    Vehicle_Roda_Dua: "Vehicle (Roda Dua)",
+    Vehicle_Roda_Empat: "Vehicle (Roda Empat)",
+  };
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row flex-wrap space-y-4 sm:space-y-0 items-center justify-between pb-4">
@@ -975,7 +1029,9 @@ const Table = () => {
               <option value="companydata">Company</option>
               <option value="employeesdata">Employee</option>
               <option value="securitydata">Security</option>
-              <option value="usersdata">User</option>
+              {session?.user?.role === "admin" && (
+                <option value="usersdata">User</option>
+              )}
               <option value="visitsdata">Visit</option>
               <option value="teammembersdata">Member</option>
             </select>
@@ -1023,17 +1079,20 @@ const Table = () => {
             </>
           )}
         </div>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 flex items-center ps-3 pointer-events-none">
-            <Search className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+        <div className="flex items-center space-x-4">
+          {renderDateRangePicker()}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 flex items-center ps-3 pointer-events-none">
+              <Search className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            </div>
+            <input
+              type="text"
+              className="block p-2 ps-10 text-sm text-gray-900 dark:text-white border border-gray-300 rounded-lg w-75 bg-gray-50 dark:bg-gray-900"
+              placeholder="Search for items"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <input
-            type="text"
-            className="block p-2 ps-10 text-sm text-gray-900 dark:text-white border border-gray-300 rounded-lg w-75 bg-gray-50 dark:bg-gray-900"
-            placeholder="Search for items"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
         </div>
       </div>
 

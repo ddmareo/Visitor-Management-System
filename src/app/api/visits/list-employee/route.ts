@@ -87,7 +87,6 @@ export async function GET() {
       }
 
       const startDate = visit.entry_start_date.toISOString();
-      const endDate = visit.entry_end_date.toISOString();
 
       const mappedCategory =
         visitCategoryMapping[
@@ -101,7 +100,6 @@ export async function GET() {
         employeeName: visit.employee?.name || "N/A",
         department: visit.employee?.department || "N/A",
         startDate,
-        endDate,
         category: mappedCategory,
         entryMethod: visit.entry_method,
         vehicleNumber: visit.vehicle_number || "",

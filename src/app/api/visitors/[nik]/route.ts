@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: { nik: string } }
 ) {
   const nik = params.nik;

@@ -8,7 +8,9 @@ const page = async () => {
 
   if (
     !session ||
-    (session.user.role !== "security" && session.user.role !== "admin")
+    (session.user.role !== "security" &&
+      session.user.role !== "admin" &&
+      session.user.role !== "sec_admin")
   ) {
     redirect("/error/restricted");
   }

@@ -19,7 +19,6 @@ interface Visit {
   company: string;
   employeeName: string;
   startDate: string;
-  endDate: string;
   category: string;
   entryMethod: string;
   vehicleNumber: string;
@@ -45,10 +44,17 @@ const getApiEndpoint = (role?: string | null) => {
     case "user":
       return API_ENDPOINTS.USER;
     case "admin":
+    case "sec_admin":
       return API_ENDPOINTS.ADMIN;
     default:
       return API_ENDPOINTS.DEFAULT;
   }
+};
+
+const methodLabels: Record<string, string> = {
+  Walking: "Walking",
+  Vehicle_Roda_Dua: "Vehicle (Roda Dua)",
+  Vehicle_Roda_Empat: "Vehicle (Roda Empat)",
 };
 
 const VisitsSection: React.FC<VisitsSectionProps> = ({ title, visits }) => (
@@ -132,23 +138,13 @@ const VisitsSection: React.FC<VisitsSectionProps> = ({ title, visits }) => (
             </div>
 
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <div>
-                <div className="text-gray-500 dark:text-gray-400">End Date</div>
-                <div className="text-gray-900 dark:text-white font-medium">
-                  {new Date(visit.endDate).toLocaleDateString("en-GB")}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
               <DoorOpen className="w-4 h-4 text-gray-500 dark:text-gray-400" />
               <div>
                 <div className="text-gray-500 dark:text-gray-400">
                   Entry Method
                 </div>
                 <div className="text-gray-900 dark:text-white font-medium">
-                  {visit.entryMethod}
+                  {methodLabels[visit.entryMethod]}
                 </div>
               </div>
             </div>

@@ -4,6 +4,13 @@ import { NextResponse } from "next/server";
 
 const prisma = new PrismaClient();
 
+const visitCategoryMapping = {
+  "Meeting & Visits": "Meeting___Visits",
+  Delivery: "Delivery",
+  "Working (Project & Repair)": "Working__Project___Repair_",
+  VIP: "VIP",
+} as const;
+
 export async function PUT(
   req: Request,
   { params }: { params: { id: string } }
@@ -21,9 +28,11 @@ export async function PUT(
         visit_id: parseInt(params.id, 10),
       },
       data: {
-        visit_category: data.visit_category,
+        visit_category:
+          visitCategoryMapping[
+            data.visit_category as keyof typeof visitCategoryMapping
+          ] || data.visit_category,
         entry_start_date: new Date(data.entry_start_date),
-        entry_end_date: new Date(data.entry_end_date),
         entry_method: data.entry_method,
         vehicle_number: data.vehicle_number || null,
       },

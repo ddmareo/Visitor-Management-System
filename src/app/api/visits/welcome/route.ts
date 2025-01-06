@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
 
@@ -17,6 +19,7 @@ export async function GET() {
         check_in_time: {
           not: null,
         },
+        check_out_time: null,
         visitor_id: {
           not: null,
         },

@@ -1,15 +1,16 @@
 import { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
-import { withAuth } from "@/lib/with-auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 const prisma = new PrismaClient();
 
 export async function GET() {
-  const authResponse = await withAuth();
+  const session = await getServerSession(authOptions);
 
-  if (authResponse instanceof Response) {
-    return authResponse;
+  if (!session || session.user.role !== "admin") {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
   try {
@@ -64,10 +65,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const authResponse = await withAuth();
+  const session = await getServerSession(authOptions);
 
-  if (authResponse instanceof Response) {
-    return authResponse;
+  if (!session || session.user.role !== "admin") {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
   try {
@@ -117,10 +118,10 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const authResponse = await withAuth();
+  const session = await getServerSession(authOptions);
 
-  if (authResponse instanceof Response) {
-    return authResponse;
+  if (!session || session.user.role !== "admin") {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
   try {

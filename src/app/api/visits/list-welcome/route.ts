@@ -18,7 +18,10 @@ const visitCategoryMapping = {
 export async function GET() {
   const session = await getServerSession(authOptions);
 
-  if (!session || session?.user?.role !== "admin") {
+  if (
+    !session ||
+    (session?.user?.role !== "admin" && session?.user?.role !== "sec_admin")
+  ) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

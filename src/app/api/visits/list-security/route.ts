@@ -17,7 +17,9 @@ export async function GET() {
 
   if (
     !session ||
-    (session?.user?.role !== "security" && session?.user?.role !== "admin")
+    (session?.user?.role !== "security" &&
+      session?.user?.role !== "admin" &&
+      session?.user?.role !== "sec_admin")
   ) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -63,7 +65,6 @@ export async function GET() {
       }
 
       const startDate = visit.entry_start_date.toISOString();
-      const endDate = visit.entry_end_date.toISOString();
 
       const mappedCategory =
         visitCategoryMapping[
@@ -76,7 +77,6 @@ export async function GET() {
         company: visit.visitor?.company?.company_name || "N/A",
         employeeName: visit.employee?.name || "N/A",
         startDate,
-        endDate,
         category: mappedCategory,
         entryMethod: visit.entry_method,
         vehicleNumber: visit.vehicle_number || "",

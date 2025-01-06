@@ -30,7 +30,9 @@ export async function GET(
 
     if (
       !session ||
-      (session.user.role !== "admin" && session.user.role !== "security")
+      (session?.user?.role !== "security" &&
+        session?.user?.role !== "admin" &&
+        session?.user?.role !== "sec_admin")
     ) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
