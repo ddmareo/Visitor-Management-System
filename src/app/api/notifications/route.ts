@@ -14,32 +14,50 @@ export async function GET() {
 
   const userId = parseInt(session.user.id, 10);
 
-  const response = new NextResponse(
-    new ReadableStream({
-      start(controller) {
-        clients.set(userId, controller);
+  const headers = new Headers({
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
+  });
 
-        const cleanup = () => {
-          clients.delete(userId);
+  let heartbeatInterval: NodeJS.Timeout;
+
+  const stream = new ReadableStream({
+    start(controller) {
+      clients.set(userId, controller);
+
+      controller.enqueue('event: connected\ndata: {"status":"connected"}\n\n');
+
+      heartbeatInterval = setInterval(() => {
+        try {
+          controller.enqueue(": heartbeat\n\n");
+        } catch (error) {
+          cleanup();
+        }
+      }, 30000);
+
+      const cleanup = () => {
+        clearInterval(heartbeatInterval);
+        clients.delete(userId);
+        try {
           controller.close();
-        };
+        } catch (error) {
+          console.log("Controller already closed");
+        }
+      };
 
-        const headers = new Headers();
-        headers.get("connection")?.toLowerCase() === "close" && cleanup();
+      if (headers.get("connection")?.toLowerCase() === "close") {
+        cleanup();
+      }
+    },
+    cancel() {
+      clearInterval(heartbeatInterval);
+      clients.delete(userId);
+    },
+  });
 
-        controller.enqueue("retry: 1000\n\n");
-      },
-    }),
-    {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache, no-transform",
-        Connection: "keep-alive",
-      },
-    }
-  );
-
-  return response;
+  return new NextResponse(stream, { headers });
 }
 
 export async function sendNotification(userId: number, message: string) {
@@ -53,9 +71,21 @@ export async function sendNotification(userId: number, message: string) {
 
     const controller = clients.get(userId);
     if (controller) {
-      const data = `data: ${JSON.stringify({ message })}\n\n`;
-      console.log(`Sending notification to user ${userId}:`, message);
-      controller.enqueue(data);
+      try {
+        const eventData = {
+          type: "notification",
+          message,
+          timestamp: new Date().toISOString(),
+        };
+        const eventString = `event: notification\ndata: ${JSON.stringify(
+          eventData
+        )}\n\n`;
+        console.log(`Sending notification to user ${userId}:`, message);
+        controller.enqueue(eventString);
+      } catch (error) {
+        clients.delete(userId);
+        console.error("Error sending notification, client removed:", error);
+      }
     }
   } catch (error) {
     console.error("Error sending notification:", error);

@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "../components/header";
 import { NextAuthProvider } from "../providers/NextAuthProvider";
 import NotificationListener from "@/components/notificationtoast";
+import { Toaster } from "sonner";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -31,6 +32,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <NextAuthProvider>
+          <Toaster richColors position="top-right" />
           <Header />
           <main>{children}</main>
           <NotificationListener />

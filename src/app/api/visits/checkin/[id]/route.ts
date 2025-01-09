@@ -81,8 +81,13 @@ export async function PUT(
       });
 
       if (employeeUser) {
-        const message = `${updatedVisit.visitor?.name} has checked in for their visit.`;
-        await sendNotification(employeeUser.user_id, message);
+        try {
+          const message = `${updatedVisit.visitor?.name} has checked in for their visit.`;
+          await sendNotification(employeeUser.user_id, message);
+          console.log(`Notification sent to employee ${employeeUser.user_id}`);
+        } catch (error) {
+          console.error("Error sending notification:", error);
+        }
       }
     }
 
