@@ -32,7 +32,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <NextAuthProvider>
-          <Toaster richColors position="top-right" />
+          <Toaster richColors position="top-center" />
           <Header />
           <main>{children}</main>
           <NotificationListener />

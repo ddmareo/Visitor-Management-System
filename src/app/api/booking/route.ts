@@ -6,8 +6,18 @@ import {
 } from "@prisma/client";
 import { v4 as uuidv4 } from "uuid";
 import QRCode from "qrcode";
+import { sendNotification } from "@/lib/notifications";
 
 const prisma = new PrismaClient();
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const visitCategoryMapping = {
+  Meeting___Visits: "Meeting & Visits",
+  Delivery: "Delivery",
+  Working__Project___Repair_: "Working (Project & Repair)",
+  VIP: "VIP",
+} as const;
 
 export async function GET() {
   try {
@@ -99,6 +109,17 @@ export async function POST(request: Request) {
 
     const visitor_id = visitorRecord.visitor_id;
 
+    const employeeRecord = await prisma.users.findFirst({
+      where: { employee_id: employee },
+    });
+
+    if (!employeeRecord?.user_id) {
+      return NextResponse.json(
+        { error: "Employee user account not found" },
+        { status: 404 }
+      );
+    }
+
     const qrCodeUUID = uuidv4();
     const qrCodeURL = `${qrCodeUUID}`;
 
@@ -130,6 +151,23 @@ export async function POST(request: Request) {
       await prisma.teammember.createMany({
         data: teamData,
       });
+    }
+
+    const formattedDate = entry_start_date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+
+    try {
+      await delay(1000);
+
+      const notificationMessage = `${visitorRecord.name} has booked a visit on ${formattedDate} under ${visitCategoryMapping[category]}`;
+
+      await sendNotification(employeeRecord.user_id, notificationMessage);
+      console.log(`Notification sent to employee ${employeeRecord.user_id}`);
+    } catch (error) {
+      console.error("Error sending notification:", error);
     }
 
     return NextResponse.json({

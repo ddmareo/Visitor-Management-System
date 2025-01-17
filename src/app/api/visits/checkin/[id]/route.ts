@@ -2,9 +2,11 @@ import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { sendNotification } from "@/app/api/notifications/route";
+import { sendNotification } from "@/lib/notifications";
 
 const prisma = new PrismaClient();
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function PUT(
   _request: Request,
@@ -66,7 +68,11 @@ export async function PUT(
         },
       },
       include: {
-        visitor: true,
+        visitor: {
+          include: {
+            company: true,
+          },
+        },
         employee: true,
         security: true,
         teammember: true,
@@ -82,7 +88,8 @@ export async function PUT(
 
       if (employeeUser) {
         try {
-          const message = `${updatedVisit.visitor?.name} has checked in for their visit.`;
+          await delay(1000);
+          const message = `${updatedVisit.visitor?.name} from ${updatedVisit.visitor?.company.company_name} has checked in for their visit`;
           await sendNotification(employeeUser.user_id, message);
           console.log(`Notification sent to employee ${employeeUser.user_id}`);
         } catch (error) {

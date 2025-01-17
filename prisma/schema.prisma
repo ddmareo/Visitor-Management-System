@@ -49,6 +49,7 @@ model notifications {
   message    String
   user_id    Int
   mark_read  Boolean  @default(false)
+  created_at DateTime @default(now()) // New column
   user       users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 }
 
