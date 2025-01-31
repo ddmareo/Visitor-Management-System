@@ -236,7 +236,7 @@ const NavbarWithSidebar: React.FC<NavbarProps> = () => {
 
   useEffect(() => {
     const fetchUsername = async () => {
-      if (status === "authenticated" && isUser) {
+      if (status === "authenticated") {
         try {
           const response = await axios.get("/api/profile");
           setUsername(response.data.username);

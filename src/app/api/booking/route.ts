@@ -7,6 +7,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import QRCode from "qrcode";
 import { sendNotification } from "@/lib/notifications";
+import { sendTeamsNotification } from "@/lib/teamsnotifications";
 
 const prisma = new PrismaClient();
 
@@ -111,6 +112,9 @@ export async function POST(request: Request) {
 
     const employeeRecord = await prisma.users.findFirst({
       where: { employee_id: employee },
+      include: {
+        employee: true,
+      },
     });
 
     if (!employeeRecord?.user_id) {
@@ -165,9 +169,18 @@ export async function POST(request: Request) {
       const notificationMessage = `${visitorRecord.name} has booked a visit on ${formattedDate} under ${visitCategoryMapping[category]}`;
 
       await sendNotification(employeeRecord.user_id, notificationMessage);
-      console.log(`Notification sent to employee ${employeeRecord.user_id}`);
+
+      if (employeeRecord.employee?.email) {
+        await sendTeamsNotification(
+          employeeRecord.employee.email,
+          notificationMessage
+        );
+        console.log(
+          `Teams notification sent to ${employeeRecord.employee.email}`
+        );
+      }
     } catch (error) {
-      console.error("Error sending notification:", error);
+      console.error("Error sending notifications:", error);
     }
 
     return NextResponse.json({

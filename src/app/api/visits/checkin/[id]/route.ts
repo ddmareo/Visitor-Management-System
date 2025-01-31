@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { sendNotification } from "@/lib/notifications";
+import { sendTeamsNotification } from "@/lib/teamsnotifications";
 
 const prisma = new PrismaClient();
 
@@ -84,13 +85,17 @@ export async function PUT(
         where: {
           employee_id: updatedVisit.employee_id,
         },
+        include: {
+          employee: true,
+        },
       });
 
-      if (employeeUser) {
+      if (employeeUser && employeeUser.employee?.email) {
         try {
           await delay(1000);
           const message = `${updatedVisit.visitor?.name} from ${updatedVisit.visitor?.company.company_name} has checked in for their visit`;
           await sendNotification(employeeUser.user_id, message);
+          await sendTeamsNotification(employeeUser.employee?.email, message);
           console.log(`Notification sent to employee ${employeeUser.user_id}`);
         } catch (error) {
           console.error("Error sending notification:", error);
