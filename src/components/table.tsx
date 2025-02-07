@@ -28,7 +28,6 @@ interface Visitor {
   contact_email: string;
   address: string;
   registration_date: string;
-  id_card: string;
 }
 
 interface Company {
@@ -166,8 +165,8 @@ const Table = () => {
     fetchData();
   }, [selectedTable]);
 
-  const handleTableChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedTable(event.target.value);
+  const handleTableChange = (tableName: string) => {
+    setSelectedTable(tableName);
     setSearchTerm("");
 
     const hideAddButtonTables = [
@@ -175,7 +174,31 @@ const Table = () => {
       "visitsdata",
       "teammembersdata",
     ];
-    setIsVisible(!hideAddButtonTables.includes(event.target.value));
+    setIsVisible(!hideAddButtonTables.includes(tableName));
+  };
+
+  const TabButton = ({
+    tableName,
+    label,
+    show = true,
+  }: {
+    tableName: string;
+    label: string;
+    show?: boolean;
+  }) => {
+    if (!show) return null;
+
+    return (
+      <button
+        onClick={() => handleTableChange(tableName)}
+        className={`px-4 py-2 text-sm font-medium rounded-t-lg ${
+          selectedTable === tableName
+            ? "text-blue-600 bg-white border-t border-x border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+            : "text-gray-500 hover:text-gray-700 bg-gray-100 dark:bg-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+        }`}>
+        {label}
+      </button>
+    );
   };
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1018,80 +1041,82 @@ const Table = () => {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row flex-wrap space-y-4 sm:space-y-0 items-center justify-between pb-4">
-        <div className="flex items-center space-x-1.5">
-          <div className="relative mr-2.5">
-            <select
-              value={selectedTable}
-              onChange={handleTableChange}
-              className="block p-2 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white">
-              <option value="visitorsdata">Visitor</option>
-              <option value="companydata">Company</option>
-              <option value="employeesdata">Employee</option>
-              <option value="securitydata">Security</option>
-              {session?.user?.role === "admin" && (
-                <option value="usersdata">User</option>
-              )}
-              <option value="visitsdata">Visit</option>
-              <option value="teammembersdata">Member</option>
-            </select>
-          </div>
-          {isVisible && (
-            <button
-              onClick={handleAdd}
-              className="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2">
-              <Plus className="w-5 h-5" />
-            </button>
-          )}
-          <button
-            onClick={handleDelete}
-            className="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2">
-            <Trash2 className="w-5 h-5" />
-          </button>
-          {selectedTable === "employeesdata" && (
-            <>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleCSVFileSelect}
-                accept=".csv"
-                className="hidden"
-              />
-              <button
-                onClick={triggerFileInput}
-                disabled={importing}
-                className="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 flex items-center">
-                <Upload className="w-5 h-5 mr-1" />
-                {importing ? "Importing..." : "Import CSV"}
-              </button>
-              <button
-                onClick={handleExportCSV}
-                className="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 flex items-center">
-                <File className="w-5 h-5 mr-1" />
-                Export CSV
-              </button>
-              <button
-                onClick={downloadTemplate}
-                className="text-white bg-purple-600 hover:bg-purple-700 focus:ring-4 focus:outline-none focus:ring-purple-300 font-medium rounded-lg text-sm px-4 py-2 flex items-center">
-                <Download className="w-5 h-5 mr-1" />
-                Template
-              </button>
-            </>
-          )}
-        </div>
-        <div className="flex items-center space-x-4">
-          {renderDateRangePicker()}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 flex items-center ps-3 pointer-events-none">
-              <Search className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            </div>
-            <input
-              type="text"
-              className="block p-2 ps-10 text-sm text-gray-900 dark:text-white border border-gray-300 rounded-lg w-75 bg-gray-50 dark:bg-gray-900"
-              placeholder="Search for items"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+      <div className="flex flex-col space-y-4 pb-4">
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <div className="flex space-x-2 overflow-x-auto">
+            <TabButton tableName="visitorsdata" label="Visitors" />
+            <TabButton tableName="companydata" label="Companies" />
+            <TabButton tableName="employeesdata" label="Employees" />
+            <TabButton tableName="securitydata" label="Security" />
+            <TabButton
+              tableName="usersdata"
+              label="Users"
+              show={session?.user?.role === "admin"}
             />
+            <TabButton tableName="visitsdata" label="Visits" />
+            <TabButton tableName="teammembersdata" label="Team Members" />
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row flex-wrap space-y-4 sm:space-y-0 items-center justify-between">
+          <div className="flex items-center space-x-1.5">
+            {isVisible && (
+              <button
+                onClick={handleAdd}
+                className="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2">
+                <Plus className="w-5 h-5" />
+              </button>
+            )}
+            <button
+              onClick={handleDelete}
+              className="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2">
+              <Trash2 className="w-5 h-5" />
+            </button>
+            {selectedTable === "employeesdata" && (
+              <>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleCSVFileSelect}
+                  accept=".csv"
+                  className="hidden"
+                />
+                <button
+                  onClick={triggerFileInput}
+                  disabled={importing}
+                  className="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 flex items-center">
+                  <Upload className="w-5 h-5 mr-1" />
+                  {importing ? "Importing..." : "Import CSV"}
+                </button>
+                <button
+                  onClick={handleExportCSV}
+                  className="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 flex items-center">
+                  <File className="w-5 h-5 mr-1" />
+                  Export CSV
+                </button>
+                <button
+                  onClick={downloadTemplate}
+                  className="text-white bg-purple-600 hover:bg-purple-700 focus:ring-4 focus:outline-none focus:ring-purple-300 font-medium rounded-lg text-sm px-4 py-2 flex items-center">
+                  <Download className="w-5 h-5 mr-1" />
+                  Template
+                </button>
+              </>
+            )}
+          </div>
+          <div className="flex items-center space-x-4">
+            {renderDateRangePicker()}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 flex items-center ps-3 pointer-events-none">
+                <Search className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              </div>
+              <input
+                type="text"
+                className="block p-2 ps-10 text-sm text-gray-900 dark:text-white border border-gray-300 rounded-lg w-75 bg-gray-50 dark:bg-gray-900"
+                placeholder="Search for items"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
         </div>
       </div>

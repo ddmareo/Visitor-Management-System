@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { SecureStorageService } from "@/utils/encryption";
 import { AlertCircle } from "lucide-react";
 
 const Page = () => {
@@ -42,7 +41,7 @@ const Page = () => {
 
   useEffect(() => {
     const checkNIK = async () => {
-      const storedNIK = await SecureStorageService.getItem("visitorNIK");
+      const storedNIK = sessionStorage.getItem("visitorNIK");
       if (!storedNIK) {
         router.push("/");
         return;

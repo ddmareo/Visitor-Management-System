@@ -1,6 +1,7 @@
 import { withAuth } from "@/lib/with-auth";
 import { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { encrypt } from "@/utils/encryption";
 
 const prisma = new PrismaClient();
 
@@ -16,6 +17,12 @@ export async function PUT(
 
   try {
     const data = await req.json();
+
+    const encryptedIdNumber =
+      data.id_number !== undefined && data.id_number !== null
+        ? encrypt(data.id_number)
+        : undefined;
+
     const updatedVisitor = await prisma.visitor.update({
       where: {
         visitor_id: parseInt(params.id, 10),
@@ -23,7 +30,7 @@ export async function PUT(
       data: {
         name: data.name,
         company_id: data.company_id,
-        id_number: data.id_number,
+        id_number: encryptedIdNumber,
         contact_phone: data.contact_phone,
         contact_email: data.contact_email,
         address: data.address,

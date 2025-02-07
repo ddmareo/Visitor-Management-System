@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { decrypt } from "@/utils/encryption";
 
 const prisma = new PrismaClient();
 
@@ -17,25 +18,29 @@ export async function GET(
   }
 
   try {
-    const visitor = await prisma.visitor.findUnique({
-      where: { id_number: nik },
+    const visitors = await prisma.visitor.findMany({
       select: {
+        id_number: true,
         name: true,
         company: {
-          select: {
-            company_name: true,
-          },
+          select: { company_name: true },
         },
       },
     });
 
-    if (visitor) {
+    const matchedVisitor = visitors.find((visitor) => {
+      const decryptedId = decrypt(visitor.id_number);
+      const decryptedNikParams = decrypt(nik);
+      return decryptedId === decryptedNikParams;
+    });
+
+    if (matchedVisitor) {
       return NextResponse.json(
         {
           exists: true,
           visitor: {
-            name: visitor.name,
-            company_name: visitor.company?.company_name || null,
+            name: matchedVisitor.name,
+            company_name: matchedVisitor.company?.company_name || null,
           },
         },
         { status: 200 }

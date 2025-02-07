@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
+import { decrypt } from "@/utils/encryption";
 
 const prisma = new PrismaClient();
 
@@ -34,6 +35,7 @@ export async function GET() {
 
     const formattedData = tableData.map((visitor) => ({
       ...visitor,
+      id_number: visitor.id_number ? decrypt(visitor.id_number) : null, // Decrypt id_number
       company_name: visitor.company?.company_name || null,
     }));
 

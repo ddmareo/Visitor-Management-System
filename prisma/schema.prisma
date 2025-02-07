@@ -33,15 +33,15 @@ model teammember {
 }
 
 model users {
-  user_id       Int            @id @default(autoincrement())
-  username      String         @unique @db.VarChar(100)
-  password      String         @db.VarChar(255)
+  user_id       Int             @id @default(autoincrement())
+  username      String          @unique @db.VarChar(100)
+  password      String          @db.VarChar(255)
   role          user_role_enum
   employee_id   Int?
   security_id   Int?
-  employee      employee?      @relation(fields: [employee_id], references: [employee_id], onUpdate: NoAction)
-  security      security?      @relation(fields: [security_id], references: [security_id], onUpdate: NoAction)
   notifications notifications[]
+  employee      employee?       @relation(fields: [employee_id], references: [employee_id], onUpdate: NoAction)
+  security      security?       @relation(fields: [security_id], references: [security_id], onUpdate: NoAction)
 }
 
 model notifications {
@@ -49,7 +49,7 @@ model notifications {
   message    String
   user_id    Int
   mark_read  Boolean  @default(false)
-  created_at DateTime @default(now()) // New column
+  created_at DateTime @default(now())
   user       users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 }
 
@@ -79,10 +79,10 @@ model visitor {
   visitor_id        Int       @id @default(autoincrement())
   name              String    @db.VarChar(100)
   company_id        Int
-  id_number         String    @unique(map: "unique_id_number") @db.VarChar(16)
+  id_number         String    @unique(map: "unique_id_number") @db.VarChar(255)
   contact_phone     String    @db.VarChar(15)
-  contact_email     String    @db.VarChar(100)
-  address           String
+  contact_email     String?   @db.VarChar(100)
+  address           String?
   registration_date DateTime? @default(now()) @db.Timestamp(6)
   id_card           Bytes?
   visit             visit[]
@@ -95,9 +95,14 @@ model company {
   visitor      visitor[]
 }
 
+model FormConfig {
+  id     Int  @id @default(1)
+  fields Json
+}
+
 enum entry_method_enum {
   Walking
-  Vehicle_Roda_Dua 
+  Vehicle_Roda_Dua
   Vehicle_Roda_Empat
 }
 

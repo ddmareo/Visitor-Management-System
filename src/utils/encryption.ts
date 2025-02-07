@@ -1,84 +1,29 @@
-export class EncryptionService {
-  private static async getKey(): Promise<CryptoKey> {
-    const rawKey = atob(process.env.NEXT_PUBLIC_ENCRYPTION_KEY || "");
-    const keyData = new Uint8Array(
-      [...rawKey].map((char) => char.charCodeAt(0))
-    );
-    return await crypto.subtle.importKey(
-      "raw",
-      keyData,
-      { name: "AES-GCM" },
-      false,
-      ["encrypt", "decrypt"]
-    );
-  }
+import crypto from "crypto";
 
-  static async encrypt(data: string): Promise<string> {
-    const key = await this.getKey();
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const encoder = new TextEncoder();
+const ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY
+  ? Buffer.from(process.env.NEXT_PUBLIC_ENCRYPTION_KEY, "base64")
+  : null;
 
-    const encryptedData = await crypto.subtle.encrypt(
-      {
-        name: "AES-GCM",
-        iv: iv,
-      },
-      key,
-      encoder.encode(data)
-    );
-
-    const encryptedArray = new Uint8Array(encryptedData);
-    const combined = new Uint8Array(iv.length + encryptedArray.length);
-    combined.set(iv);
-    combined.set(encryptedArray, iv.length);
-
-    return btoa(String.fromCharCode(...combined));
-  }
-
-  static async decrypt(encryptedData: string): Promise<string> {
-    const key = await this.getKey();
-    const decoder = new TextDecoder();
-
-    const combined = new Uint8Array(
-      atob(encryptedData)
-        .split("")
-        .map((char) => char.charCodeAt(0))
-    );
-
-    const iv = combined.slice(0, 12);
-    const data = combined.slice(12);
-
-    const decryptedData = await crypto.subtle.decrypt(
-      {
-        name: "AES-GCM",
-        iv: iv,
-      },
-      key,
-      data
-    );
-
-    return decoder.decode(decryptedData);
-  }
+if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 32) {
+  throw new Error("ENCRYPTION_KEY must be a 32-byte Base64-encoded string");
 }
 
-export class SecureStorageService {
-  static async setItem(key: string, value: string): Promise<void> {
-    const encryptedValue = await EncryptionService.encrypt(value);
-    sessionStorage.setItem(key, encryptedValue);
-  }
+const IV_LENGTH = 16;
 
-  static async getItem(key: string): Promise<string | null> {
-    const encryptedValue = sessionStorage.getItem(key);
-    if (!encryptedValue) return null;
-    try {
-      return await EncryptionService.decrypt(encryptedValue);
-    } catch (error) {
-      console.error("Error decrypting data:", error);
-      return null;
-    }
-  }
+export const encrypt = (text: string): string => {
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv("aes-256-cbc", ENCRYPTION_KEY, iv);
+  let encrypted = cipher.update(text);
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  return iv.toString("hex") + ":" + encrypted.toString("hex");
+};
 
-  static removeItem(key: string): void {
-    sessionStorage.removeItem(key);
-  }
-}
+export const decrypt = (text: string): string => {
+  const textParts = text.split(":");
+  const iv = Buffer.from(textParts[0], "hex");
+  const encryptedText = Buffer.from(textParts[1], "hex");
+  const decipher = crypto.createDecipheriv("aes-256-cbc", ENCRYPTION_KEY, iv);
+  let decrypted = decipher.update(encryptedText);
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+  return decrypted.toString();
+};

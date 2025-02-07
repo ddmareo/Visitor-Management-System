@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import axios from "axios";
 import { CreditCard, AlertCircle, ArrowRight } from "lucide-react";
-import { SecureStorageService } from "@/utils/encryption";
+import { encrypt } from "@/utils/encryption";
 
 export default function Home() {
   const router = useRouter();
@@ -28,9 +28,11 @@ export default function Home() {
     }
 
     try {
-      const response = await axios.get(`/api/visitors/${nikWithoutSpaces}`);
+      const encryptedNIK = await encrypt(nikWithoutSpaces);
 
-      await SecureStorageService.setItem("visitorNIK", nikWithoutSpaces);
+      const response = await axios.get(`/api/visitors/${encryptedNIK}`);
+
+      sessionStorage.setItem("visitorNIK", encryptedNIK);
 
       if (response.data.exists) {
         router.push("/visitor/booking");

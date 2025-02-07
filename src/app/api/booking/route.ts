@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 import QRCode from "qrcode";
 import { sendNotification } from "@/lib/notifications";
 import { sendTeamsNotification } from "@/lib/teamsnotifications";
+import { decrypt } from "@/utils/encryption";
 
 const prisma = new PrismaClient();
 
@@ -100,8 +101,13 @@ export async function POST(request: Request) {
       }
     }
 
-    const visitorRecord = await prisma.visitor.findUnique({
-      where: { id_number: visitor },
+    const decryptedNIK = await decrypt(visitor);
+
+    const allVisitors = await prisma.visitor.findMany();
+
+    const visitorRecord = allVisitors.find((v) => {
+      const decryptedID = decrypt(v.id_number);
+      return decryptedID === decryptedNIK;
     });
 
     if (!visitorRecord) {

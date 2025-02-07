@@ -4,11 +4,19 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { AlertCircle } from "lucide-react";
-import { SecureStorageService } from "@/utils/encryption";
+import { encrypt, decrypt } from "@/utils/encryption";
 
 interface Company {
   id: string;
   name: string;
+}
+
+interface FormField {
+  id: string;
+  label: string;
+  enabled: boolean;
+  required: boolean;
+  type: string;
 }
 
 const Page = () => {
@@ -20,6 +28,7 @@ const Page = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [showNewCompanyField, setShowNewCompanyField] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState("");
+  const [formConfig, setFormConfig] = useState<FormField[]>([]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -29,6 +38,8 @@ const Page = () => {
     email: "",
     address: "",
   });
+
+  const RequiredIndicator = () => <span className="text-red-500 ml-1">*</span>;
 
   const createWatermarkSVG = (width: number, height: number) => {
     const fontSize = Math.min(width, height) * 0.1;
@@ -105,6 +116,19 @@ const Page = () => {
   };
 
   useEffect(() => {
+    const fetchFormConfig = async () => {
+      try {
+        const response = await axios.get("/api/formconfig");
+        setFormConfig(response.data);
+      } catch (error) {
+        console.error("Error fetching form configuration:", error);
+      }
+    };
+
+    fetchFormConfig();
+  }, []);
+
+  useEffect(() => {
     const fetchCompanies = async () => {
       try {
         const response = await axios.get("/api/register");
@@ -119,18 +143,22 @@ const Page = () => {
       }
     };
 
-    const checkNIK = async () => {
-      const storedNIK = await SecureStorageService.getItem("visitorNIK");
-      if (!storedNIK) {
-        router.push("/");
-        return;
-      }
-      setFormData((prev) => ({ ...prev, nomorktp: storedNIK }));
-    };
-
     fetchCompanies();
-    checkNIK();
   }, [router]);
+
+  useEffect(() => {
+    const storedNIK = sessionStorage.getItem("visitorNIK");
+    if (storedNIK) {
+      try {
+        const decryptedNIK = decrypt(storedNIK);
+        setFormData((prevData) => ({ ...prevData, nomorktp: decryptedNIK }));
+      } catch (error) {
+        console.error("Failed to decrypt NIK:", error);
+      }
+    } else {
+      router.push("/");
+    }
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -173,7 +201,10 @@ const Page = () => {
     try {
       const submitFormData = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
-        if (key === "company" && showNewCompanyField) {
+        if (key === "nomorktp") {
+          const encryptedNIK = encrypt(value);
+          submitFormData.append(key, encryptedNIK);
+        } else if (key === "company" && showNewCompanyField) {
           submitFormData.append("company", newCompanyName);
           submitFormData.append("isNewCompany", "true");
         } else {
@@ -215,6 +246,7 @@ const Page = () => {
               htmlFor="name"
               className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
               Nama Lengkap
+              <RequiredIndicator />
             </label>
             <input
               type="text"
@@ -231,6 +263,7 @@ const Page = () => {
               htmlFor="company"
               className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
               Perusahaan/Institusi
+              <RequiredIndicator />
             </label>
             <select
               id="company"
@@ -255,6 +288,7 @@ const Page = () => {
                 htmlFor="newCompany"
                 className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                 Nama Perusahaan Baru
+                <RequiredIndicator />
               </label>
               <input
                 type="text"
@@ -271,6 +305,7 @@ const Page = () => {
               htmlFor="nomorktp"
               className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
               Nomor KTP (NIK)
+              <RequiredIndicator />
             </label>
             <input
               type="text"
@@ -289,6 +324,7 @@ const Page = () => {
                 htmlFor="phone"
                 className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                 Nomor Telepon
+                <RequiredIndicator />
               </label>
               <input
                 type="tel"
@@ -300,75 +336,93 @@ const Page = () => {
                 required
               />
             </div>
-            <div className="w-full">
-              <label
-                htmlFor="email"
-                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                required
-              />
-            </div>
-          </div>
-          <div className="mb-5">
-            <label
-              htmlFor="address"
-              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-              Alamat Lengkap
-            </label>
-            <input
-              type="text"
-              id="address"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              required
-            />
-          </div>
-          <div className="mb-5">
-            <label
-              htmlFor="file"
-              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-              Pindaian Kartu Identitas (Scan KTP)
-            </label>
-            <input
-              type="file"
-              id="file"
-              onChange={handleFileChange}
-              accept="image/*"
-              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              required
-            />
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Format yang didukung: JPG, PNG (Maks. 5MB)
-            </p>
-
-            {previewUrl && (
-              <div className="mt-4">
-                <div className="max-w-md mx-auto bg-gray-100 dark:bg-gray-700 p-4 shadow-md rounded-lg border border-gray-300 dark:border-gray-600">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white mb-3.5">
-                    Hasil pindaian KTP Anda akan diberi watermark seperti yang
-                    terlihat pada preview di bawah ini.
-                  </p>
-                  <div className="relative border border-gray-300 rounded-lg overflow-hidden">
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="w-full h-auto"
-                    />
-                  </div>
-                </div>
+            {formConfig.find((field) => field.id === "email")?.enabled && (
+              <div className="w-full">
+                <label
+                  htmlFor="email"
+                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                  Email
+                  {formConfig.find((field) => field.id === "email")
+                    ?.required && <RequiredIndicator />}
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                  required={
+                    formConfig.find((field) => field.id === "email")?.required
+                  }
+                />
               </div>
             )}
           </div>
+          {formConfig.find((field) => field.id === "address")?.enabled && (
+            <div className="mb-5">
+              <label
+                htmlFor="address"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                Alamat Lengkap
+                {formConfig.find((field) => field.id === "address")
+                  ?.required && <RequiredIndicator />}
+              </label>
+              <input
+                type="text"
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                required={
+                  formConfig.find((field) => field.id === "address")?.required
+                }
+              />
+            </div>
+          )}
+          {formConfig.find((field) => field.id === "idCard")?.enabled && (
+            <div className="mb-5">
+              <label
+                htmlFor="file"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                Pindaian Kartu Identitas (Scan KTP)
+                {formConfig.find((field) => field.id === "idCard")
+                  ?.required && <RequiredIndicator />}
+              </label>
+              <input
+                type="file"
+                id="file"
+                onChange={handleFileChange}
+                accept="image/*"
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                required={
+                  formConfig.find((field) => field.id === "idCard")?.required
+                }
+              />
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Format yang didukung: JPG, PNG (Maks. 5MB)
+              </p>
+
+              {previewUrl && (
+                <div className="mt-4">
+                  <div className="max-w-md mx-auto bg-gray-100 dark:bg-gray-700 p-4 shadow-md rounded-lg border border-gray-300 dark:border-gray-600">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white mb-3.5">
+                      Hasil pindaian KTP Anda akan diberi watermark seperti yang
+                      terlihat pada preview di bawah ini.
+                    </p>
+                    <div className="relative border border-gray-300 rounded-lg overflow-hidden">
+                      <img
+                        src={previewUrl}
+                        alt="Preview"
+                        className="w-full h-auto"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex items-start mb-5">
             <div className="flex items-center h-5">
               <input
