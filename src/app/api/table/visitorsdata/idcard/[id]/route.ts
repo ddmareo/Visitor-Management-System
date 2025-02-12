@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { decryptBinary } from "@/utils/encryption";
 
 const prisma = new PrismaClient();
 
@@ -52,15 +53,16 @@ export async function GET(
       return NextResponse.json({ error: "ID card not found" }, { status: 404 });
     }
 
-    const imageData = Buffer.from(visitor.id_card);
+    const encryptedImageData = Buffer.from(visitor.id_card);
+    const decryptedImageData = decryptBinary(encryptedImageData);
 
-    const contentType = detectImageType(imageData);
+    const contentType = detectImageType(decryptedImageData);
 
-    const response = new NextResponse(imageData, {
+    const response = new NextResponse(decryptedImageData, {
       status: 200,
       headers: {
         "Content-Type": contentType,
-        "Content-Length": imageData.length.toString(),
+        "Content-Length": decryptedImageData.length.toString(),
         "Cache-Control": "public, max-age=31536000",
       },
     });

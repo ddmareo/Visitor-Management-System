@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import sharp from "sharp";
+import { encryptBinary } from "@/utils/encryption";
 
 const prisma = new PrismaClient();
 
@@ -81,6 +82,8 @@ export async function POST(request: Request) {
           .toBuffer();
       });
 
+    const encryptedImage = encryptBinary(watermarkedImage);
+
     const existingVisitor = await prisma.visitor.findUnique({
       where: { id_number: nomorktp },
     });
@@ -119,7 +122,7 @@ export async function POST(request: Request) {
         contact_phone: phone,
         contact_email: email,
         address,
-        id_card: watermarkedImage,
+        id_card: encryptedImage,
       },
     });
 

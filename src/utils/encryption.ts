@@ -27,3 +27,17 @@ export const decrypt = (text: string): string => {
   decrypted = Buffer.concat([decrypted, decipher.final()]);
   return decrypted.toString();
 };
+
+export const encryptBinary = (buffer: Buffer): Buffer => {
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv("aes-256-cbc", ENCRYPTION_KEY, iv);
+  const encrypted = Buffer.concat([cipher.update(buffer), cipher.final()]);
+  return Buffer.concat([iv, encrypted]);
+};
+
+export const decryptBinary = (encryptedBuffer: Buffer): Buffer => {
+  const iv = encryptedBuffer.subarray(0, IV_LENGTH);
+  const encryptedData = encryptedBuffer.subarray(IV_LENGTH);
+  const decipher = crypto.createDecipheriv("aes-256-cbc", ENCRYPTION_KEY, iv);
+  return Buffer.concat([decipher.update(encryptedData), decipher.final()]);
+};

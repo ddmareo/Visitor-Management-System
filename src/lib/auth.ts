@@ -7,7 +7,6 @@ type User = {
   id: string;
   username: string;
   role: string;
-  randomKey: string;
 };
 
 export const authOptions: NextAuthOptions = {
@@ -44,7 +43,6 @@ export const authOptions: NextAuthOptions = {
           id: user.user_id.toString(),
           username: user.username,
           role: user.role,
-          randomKey: "Some random Key",
         };
       },
     }),
@@ -58,7 +56,6 @@ export const authOptions: NextAuthOptions = {
           ...session.user,
           id: token.id,
           role: token.role,
-          randomKey: token.randomKey,
         },
       };
     },
@@ -70,7 +67,6 @@ export const authOptions: NextAuthOptions = {
           ...token,
           id: u.id,
           role: u.role,
-          randomKey: u.randomKey,
         };
       }
       return token;
