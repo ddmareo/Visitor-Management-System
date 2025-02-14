@@ -34,9 +34,16 @@ const FormConfigPage = () => {
     {
       id: "idCard",
       label: "Pindaian Kartu Identitas (Scan KTP)",
+      enabled: false,
+      required: false,
+      type: "file",
+    },
+    {
+      id: "faceScan",
+      label: "Scan Wajah (Selfie)",
       enabled: true,
       required: true,
-      type: "file",
+      type: "photo",
     },
   ]);
 
