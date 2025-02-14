@@ -185,12 +185,7 @@ const Page = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!selectedFile) {
-      setError("Silakan pilih file kartu identitas");
-      return;
-    }
-
-    if (selectedFile.size > 5 * 1024 * 1024) {
+    if (selectedFile && selectedFile.size > 5 * 1024 * 1024) {
       setError("Ukuran file harus kurang dari 5MB");
       return;
     }
@@ -211,7 +206,10 @@ const Page = () => {
           submitFormData.append(key, value);
         }
       });
-      submitFormData.append("idCard", selectedFile);
+
+      if (selectedFile) {
+        submitFormData.append("idCard", selectedFile);
+      }
 
       const response = await axios.post("/api/register", submitFormData, {
         headers: {

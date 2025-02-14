@@ -9,51 +9,46 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
 
-    const idCardFile = formData.get("idCard") as File;
+    const idCardFile = formData.get("idCard") as File | null;
     const name = formData.get("name") as string;
     const company = formData.get("company") as string;
     const isNewCompany = formData.get("isNewCompany") as string;
     const nomorktp = formData.get("nomorktp") as string;
     const phone = formData.get("phone") as string;
-    const email = formData.get("email") as string;
-    const address = formData.get("address") as string;
+    const email = formData.get("email") as string | null;
+    const address = formData.get("address") as string | null;
 
-    if (
-      !name ||
-      !company ||
-      !nomorktp ||
-      !phone ||
-      !email ||
-      !address ||
-      !idCardFile
-    ) {
+    if (!name || !company || !nomorktp || !phone) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    const fileArrayBuffer = await idCardFile.arrayBuffer();
-    const fileBuffer = Buffer.from(fileArrayBuffer);
+    let encryptedImage: Buffer | null = null;
 
-    const watermarkedImage = await sharp(fileBuffer)
-      .metadata()
-      .then(({ width, height }) => {
-        if (!width || !height) {
-          throw new Error("Could not determine image dimensions.");
-        }
+    if (idCardFile) {
+      const fileArrayBuffer = await idCardFile.arrayBuffer();
+      const fileBuffer = Buffer.from(fileArrayBuffer);
 
-        const fontSize = Math.min(width, height) * 0.1;
-        const spacing = fontSize * 2;
+      const watermarkedImage = await sharp(fileBuffer)
+        .metadata()
+        .then(({ width, height }) => {
+          if (!width || !height) {
+            throw new Error("Could not determine image dimensions.");
+          }
 
-        const createTiledWatermarkSVG = () => {
-          let svgContent = `<svg width="${width}" height="${height}">`;
+          const fontSize = Math.min(width, height) * 0.1;
+          const spacing = fontSize * 2;
 
-          for (let x = -spacing; x < width + spacing; x += spacing * 1.5) {
-            for (let y = -spacing; y < height + spacing; y += spacing * 1.5) {
-              const rotationAngle = -30 + (Math.random() * 20 - 10);
+          const createTiledWatermarkSVG = () => {
+            let svgContent = `<svg width="${width}" height="${height}">`;
 
-              svgContent += `
+            for (let x = -spacing; x < width + spacing; x += spacing * 1.5) {
+              for (let y = -spacing; y < height + spacing; y += spacing * 1.5) {
+                const rotationAngle = -30 + (Math.random() * 20 - 10);
+
+                svgContent += `
               <text 
                 x="${x}" 
                 y="${y}" 
@@ -66,23 +61,24 @@ export async function POST(request: Request) {
                 transform="rotate(${rotationAngle} ${x} ${y})">
                 UNTUK ALVA
               </text>`;
+              }
             }
-          }
 
-          svgContent += `</svg>`;
-          return svgContent;
-        };
+            svgContent += `</svg>`;
+            return svgContent;
+          };
 
-        return sharp(fileBuffer)
-          .composite([
-            {
-              input: Buffer.from(createTiledWatermarkSVG()),
-            },
-          ])
-          .toBuffer();
-      });
+          return sharp(fileBuffer)
+            .composite([
+              {
+                input: Buffer.from(createTiledWatermarkSVG()),
+              },
+            ])
+            .toBuffer();
+        });
 
-    const encryptedImage = encryptBinary(watermarkedImage);
+      encryptedImage = encryptBinary(watermarkedImage);
+    }
 
     const existingVisitor = await prisma.visitor.findUnique({
       where: { id_number: nomorktp },
@@ -120,9 +116,9 @@ export async function POST(request: Request) {
         company_id: companyId,
         id_number: nomorktp,
         contact_phone: phone,
-        contact_email: email,
-        address,
-        id_card: encryptedImage,
+        ...(email ? { contact_email: email } : {}),
+        ...(address ? { address: address } : {}),
+        ...(encryptedImage ? { id_card: encryptedImage } : {}),
       },
     });
 
