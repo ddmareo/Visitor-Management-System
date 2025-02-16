@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Camera } from "lucide-react";
+import { AlertCircle, Camera, X } from "lucide-react";
 import { encrypt, decrypt } from "@/utils/encryption";
 import CameraWindow from "@/components/camerawindow";
 
@@ -30,7 +30,7 @@ const Page = () => {
   const [showNewCompanyField, setShowNewCompanyField] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState("");
   const [formConfig, setFormConfig] = useState<FormField[]>([]);
-
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
 
 
@@ -119,6 +119,19 @@ const Page = () => {
     }
   };
 
+  // Function to convert base64 to file
+  const base64ToFile = (base64String: string, filename: string): File => {
+    const arr = base64String.split(',');
+    const mime = arr[0].match(/:(.*?);/)?.[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  };
+
   useEffect(() => {
     const fetchFormConfig = async () => {
       try {
@@ -186,6 +199,19 @@ const Page = () => {
     }
   };
 
+  const handleCameraCapture = (imageData: string) => {
+    setCapturedImage(imageData);
+    setShowCamera(false);
+  };
+
+  const handleCameraClose = () => {
+    setShowCamera(false);
+  };
+
+  const handleRemoveCapturedImage = () => {
+    setCapturedImage(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -213,6 +239,12 @@ const Page = () => {
 
       if (selectedFile) {
         submitFormData.append("idCard", selectedFile);
+      }
+
+      // Add captured face image to form data if exists
+      if (capturedImage) {
+        const faceImageFile = base64ToFile(capturedImage, 'face-image.jpg');
+        submitFormData.append("faceScan", faceImageFile);
       }
 
       const response = await axios.post("/api/register", submitFormData, {
@@ -435,19 +467,52 @@ const Page = () => {
                 {formConfig.find((field) => field.id === "faceScan")
                   ?.required && <RequiredIndicator />}
               </label>
-              <button
-                type="button"
-                onClick={() => setShowCamera(true)}
-                className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 flex items-center justify-center gap-2"
-              >
-                <Camera className="h-5 w-5" />
-                Buka kamera
-              </button>
+              {capturedImage ? (
+          <div className="space-y-2">
+            <div className="relative w-full max-w-md mx-auto">
+              <div className="aspect-[3/4] bg-gray-900 rounded-lg overflow-hidden">
+                <img 
+                  src={capturedImage} 
+                  alt="Captured face" 
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveCapturedImage}
+                  className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 focus:ring-2 focus:ring-red-300 focus:ring-offset-2"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-
+            <button
+              type="button"
+              onClick={() => setShowCamera(true)}
+              className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 flex items-center justify-center gap-2"
+            >
+              <Camera className="h-5 w-5" />
+              Ambil ulang foto
+            </button>
+          </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowCamera(true)}
+                  className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 flex items-center justify-center gap-2"
+                >
+                  <Camera className="h-5 w-5" />
+                  Buka kamera
+                </button>
+              )}
+              </div>
           )}
 
-          {showCamera && <CameraWindow onClose={() => setShowCamera(false)} />}
+          {showCamera && (
+            <CameraWindow 
+              onClose={handleCameraClose}
+              onCapture={handleCameraCapture}
+            />
+          )}
             
           <div className="flex items-start mb-5">
             <div className="flex items-center h-5">
