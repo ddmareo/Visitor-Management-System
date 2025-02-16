@@ -10,92 +10,32 @@ export interface CameraWindowProps {
 export default function CameraWindow({ onClose, onCapture }: CameraWindowProps) {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const cameraRef = useRef<CameraRef>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const mounted = useRef(true);
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
-  // Improved stop camera function that returns a promise
-  const stopCamera = async () => {
-    if (streamRef.current) {
-      const tracks = streamRef.current.getTracks();
-      
-      // Stop all tracks synchronously
-      tracks.forEach(track => {
-        try {
-          track.stop();
-        } catch (error) {
-          console.error('Error stopping track:', error);
-        }
-      });
-
-      // Clear references
-      streamRef.current = null;
-    }
-  };
-
+  // Single source of truth for cleanup
   useEffect(() => {
-    mounted.current = true;
-
-    // Cleanup function
     return () => {
-      mounted.current = false;
-      stopCamera();
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
     };
-  }, []);
+  }, [stream]); // Only re-run if stream changes
 
   const handleCapture = (imageData: string) => {
-    if (!mounted.current) return;
     setCapturedImage(imageData);
   };
 
-  const handleStreamReady = (stream: MediaStream) => {
-    if (!mounted.current) {
-      // If component is unmounted when stream becomes ready,
-      // stop it immediately
-      stream.getTracks().forEach(track => track.stop());
-      return;
-    }
-    streamRef.current = stream;
+  const handleRetake = () => {
+    setCapturedImage(null);
   };
 
-  const handleToggle = async () => {
-    if (!mounted.current) return;
+  const handleTakePhoto = () => {
+    cameraRef.current?.captureImage();
+  };
 
+  const handleConfirm = () => {
     if (capturedImage) {
-      setCapturedImage(null);
-    } else {
-      cameraRef.current?.captureImage();
-    }
-  };
-
-  const handleConfirm = async () => {
-    if (!mounted.current || !capturedImage) return;
-
-    try {
-      // Stop camera before doing anything else
-      await stopCamera();
-      
-      if (mounted.current) {
-        onCapture(capturedImage);
-        onClose();
-      }
-    } catch (error) {
-      console.error('Error during confirmation:', error);
-    }
-  };
-
-  const handleClose = async () => {
-    if (!mounted.current) return;
-
-    try {
-      // Stop camera before closing
-      await stopCamera();
-      
-      if (mounted.current) {
-        onClose();
-      }
-    } catch (error) {
-      console.error('Error during close:', error);
-      // Still try to close even if there's an error
+      onCapture(capturedImage);
       onClose();
     }
   };
@@ -106,7 +46,7 @@ export default function CameraWindow({ onClose, onCapture }: CameraWindowProps) 
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg text-gray-900 dark:text-white">Scan Wajah</h2>
           <button 
-            onClick={handleClose}
+            onClick={onClose}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
             <X className="h-6 w-6" />
@@ -126,7 +66,7 @@ export default function CameraWindow({ onClose, onCapture }: CameraWindowProps) 
                 <CameraObject 
                   ref={cameraRef}
                   onCapture={handleCapture}
-                  onStreamReady={handleStreamReady}
+                  onStreamReady={setStream}
                 />
               )}
             </div>
@@ -135,7 +75,7 @@ export default function CameraWindow({ onClose, onCapture }: CameraWindowProps) 
           <div className="flex flex-col gap-4 justify-center items-center">
             <button
               type="button"
-              onClick={handleToggle}
+              onClick={capturedImage ? handleRetake : handleTakePhoto}
               className="p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:ring-2 focus:ring-blue-300"
               title={capturedImage ? "Retake photo" : "Take photo"}
             >
