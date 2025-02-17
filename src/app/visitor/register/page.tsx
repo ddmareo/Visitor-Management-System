@@ -509,6 +509,7 @@ const Page = () => {
 
           {showCamera && (
             <CameraWindow 
+              mode="capture"
               onClose={handleCameraClose}
               onCapture={handleCameraCapture}
             />

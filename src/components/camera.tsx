@@ -1,16 +1,21 @@
+// camera.tsx
 import React, { useRef, forwardRef, useImperativeHandle, useEffect, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
 
+export type CameraMode = 'capture' | 'verify';
+
 export interface CameraProps {
+  mode: CameraMode;
   onCapture: (imageData: string) => void;
   onStreamReady: (stream: MediaStream) => void;
+  referenceImage?: string; // Used in verify mode for visual reference
 }
 
 export interface CameraRef {
   captureImage: () => void;
 }
 
-const CameraObject = forwardRef<CameraRef, CameraProps>(({ onCapture, onStreamReady }, ref) => {
+const CameraObject = forwardRef<CameraRef, CameraProps>(({ mode, onCapture, onStreamReady, referenceImage }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,13 +23,11 @@ const CameraObject = forwardRef<CameraRef, CameraProps>(({ onCapture, onStreamRe
   useEffect(() => {
     let stream: MediaStream | null = null;
 
-    // Check for API support
     if (!navigator.mediaDevices?.getUserMedia) {
       setError('Camera API is not supported in this browser');
       return;
     }
 
-    // First try with HD settings
     const hdConstraints = {
       video: {
         facingMode: "user",
@@ -33,22 +36,18 @@ const CameraObject = forwardRef<CameraRef, CameraProps>(({ onCapture, onStreamRe
       }
     };
 
-    // If HD fails, fallback to any video
     const basicConstraints = {
       video: true
     };
 
-    // KEEPING THE SINGLE getUserMedia PATTERN
     navigator.mediaDevices.getUserMedia(hdConstraints)
       .catch(() => navigator.mediaDevices.getUserMedia(basicConstraints))
       .then(videoStream => {
-        // Don't set stream if component unmounted during async call
         if (!videoRef.current) return;
         
         stream = videoStream;
         videoRef.current.srcObject = stream;
         
-        // Set up video error handling
         videoRef.current.onerror = () => {
           setError('Video playback error occurred');
         };
@@ -68,13 +67,12 @@ const CameraObject = forwardRef<CameraRef, CameraProps>(({ onCapture, onStreamRe
         }
       });
 
-    // KEEPING THE EXACT SAME CLEANUP
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []); // Still only run once
+  }, []);
 
   const captureImage = () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -83,7 +81,6 @@ const CameraObject = forwardRef<CameraRef, CameraProps>(({ onCapture, onStreamRe
       const video = videoRef.current;
       const canvas = canvasRef.current;
 
-      // Safety check for video readiness
       if (video.readyState !== video.HAVE_ENOUGH_DATA) {
         console.warn('Video not ready for capture');
         return;
@@ -124,6 +121,15 @@ const CameraObject = forwardRef<CameraRef, CameraProps>(({ onCapture, onStreamRe
 
   return (
     <div className="relative w-full h-full bg-black">
+      {mode === 'verify' && referenceImage && (
+        <div className="absolute top-0 right-0 z-10 p-2">
+          <img 
+            src={referenceImage} 
+            alt="Reference" 
+            className="w-24 h-32 object-cover rounded-lg border-2 border-white"
+          />
+        </div>
+      )}
       <video
         ref={videoRef}
         autoPlay

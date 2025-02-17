@@ -49,6 +49,7 @@ export async function GET(
                 company_name: true,
               },
             },
+            face_scan: true,
           },
         },
         employee: {

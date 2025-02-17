@@ -24,6 +24,7 @@ interface VisitsData {
   brings_team: boolean;
   team_members_quantity?: number;
   team_members?: string;
+  face_scan: string;
 }
 
 const Page = () => {

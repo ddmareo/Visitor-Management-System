@@ -1,25 +1,27 @@
+// camerawindow.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Camera, RotateCcw } from 'lucide-react';
-import CameraObject, { CameraRef } from './camera';
+import CameraObject, { CameraRef, CameraMode } from './camera';
 
 export interface CameraWindowProps {
+  mode: CameraMode;
   onClose: () => void;
   onCapture: (imageData: string) => void;
+  referenceImage?: string; // For verify mode
 }
 
-export default function CameraWindow({ onClose, onCapture }: CameraWindowProps) {
+export default function CameraWindow({ mode, onClose, onCapture, referenceImage }: CameraWindowProps) {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const cameraRef = useRef<CameraRef>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
 
-  // Single source of truth for cleanup
   useEffect(() => {
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [stream]); // Only re-run if stream changes
+  }, [stream]);
 
   const handleCapture = (imageData: string) => {
     setCapturedImage(imageData);
@@ -40,11 +42,33 @@ export default function CameraWindow({ onClose, onCapture }: CameraWindowProps) 
     }
   };
 
+  const getTitle = () => {
+    switch (mode) {
+      case 'capture':
+        return 'Capture Face';
+      case 'verify':
+        return 'Verify Face';
+      default:
+        return 'Scan Face';
+    }
+  };
+
+  const getConfirmButtonText = () => {
+    switch (mode) {
+      case 'capture':
+        return 'Save Capture';
+      case 'verify':
+        return 'Verify Identity';
+      default:
+        return 'Confirm';
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-4 w-full max-w-xl mx-4">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg text-gray-900 dark:text-white">Scan Wajah</h2>
+          <h2 className="text-lg text-gray-900 dark:text-white">{getTitle()}</h2>
           <button 
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -65,8 +89,10 @@ export default function CameraWindow({ onClose, onCapture }: CameraWindowProps) 
               ) : (
                 <CameraObject 
                   ref={cameraRef}
+                  mode={mode}
                   onCapture={handleCapture}
                   onStreamReady={setStream}
+                  referenceImage={referenceImage}
                 />
               )}
             </div>
@@ -92,7 +118,7 @@ export default function CameraWindow({ onClose, onCapture }: CameraWindowProps) 
                 onClick={handleConfirm}
                 className="p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:ring-2 focus:ring-green-300 w-full"
               >
-                Konfirmasi
+                {getConfirmButtonText()}
               </button>
             )}
           </div>
