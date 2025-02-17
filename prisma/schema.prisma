@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -29,7 +29,7 @@ model teammember {
   team_member_id Int    @id @default(autoincrement())
   visit_id       Int?
   member_name    String @db.VarChar(255)
-  visit          visit? @relation(fields: [visit_id], references: [visit_id], onDelete: Cascade, onUpdate: NoAction)
+  visit          visit? @relation(fields: [visit_id], references: [visit_id], onDelete: Cascade, onUpdate: Restrict)
 }
 
 model users {
@@ -40,13 +40,13 @@ model users {
   employee_id   Int?
   security_id   Int?
   notifications notifications[]
-  employee      employee?       @relation(fields: [employee_id], references: [employee_id], onUpdate: NoAction)
-  security      security?       @relation(fields: [security_id], references: [security_id], onUpdate: NoAction)
+  employee      employee?       @relation(fields: [employee_id], references: [employee_id], onUpdate: Restrict)
+  security      security?       @relation(fields: [security_id], references: [security_id], onUpdate: Restrict)
 }
 
 model notifications {
   notif_id   Int      @id @default(autoincrement())
-  message    String
+  message    String   @db.Text
   user_id    Int
   mark_read  Boolean  @default(false)
   created_at DateTime @default(now())
@@ -61,18 +61,18 @@ model visit {
   visit_category        new_visit_category_enum
   entry_method          entry_method_enum
   vehicle_number        String?                 @db.VarChar(20)
-  check_in_time         DateTime?               @db.Timestamp(6)
-  check_out_time        DateTime?               @db.Timestamp(6)
+  check_in_time         DateTime?
+  check_out_time        DateTime?
   qr_code               String?                 @db.VarChar(255)
   verification_status   Boolean?                @default(false)
-  safety_permit         Bytes?
+  safety_permit         Bytes?                  @db.MediumBlob
   brings_team           Boolean?                @default(false)
   team_members_quantity Int?
-  entry_start_date      DateTime                @db.Date
+  entry_start_date      DateTime               @db.Date
   teammember            teammember[]
-  employee              employee?               @relation(fields: [employee_id], references: [employee_id], onUpdate: NoAction)
-  security              security?               @relation(fields: [security_id], references: [security_id], onUpdate: NoAction)
-  visitor               visitor?                @relation(fields: [visitor_id], references: [visitor_id], onUpdate: NoAction)
+  employee              employee?               @relation(fields: [employee_id], references: [employee_id], onUpdate: Restrict)
+  security              security?               @relation(fields: [security_id], references: [security_id], onUpdate: Restrict)
+  visitor               visitor?                @relation(fields: [visitor_id], references: [visitor_id], onUpdate: Restrict)
 }
 
 model visitor {
@@ -82,11 +82,11 @@ model visitor {
   id_number         String    @unique(map: "unique_id_number") @db.VarChar(255)
   contact_phone     String    @db.VarChar(15)
   contact_email     String?   @db.VarChar(100)
-  address           String?
-  registration_date DateTime? @default(now()) @db.Timestamp(6)
-  id_card           Bytes?
+  address           String?   @db.Text
+  registration_date DateTime? @default(now())
+  id_card           Bytes?    @db.MediumBlob
   visit             visit[]
-  company           company   @relation(fields: [company_id], references: [company_id], onDelete: SetNull, onUpdate: NoAction)
+  company           company   @relation(fields: [company_id], references: [company_id], onDelete: Restrict, onUpdate: Restrict)
 }
 
 model company {

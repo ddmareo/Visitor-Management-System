@@ -1,4 +1,0 @@
--- AlterTable
-ALTER TABLE "visitor" ALTER COLUMN "id_number" SET DATA TYPE VARCHAR(255),
-ALTER COLUMN "contact_email" DROP NOT NULL,
-ALTER COLUMN "address" DROP NOT NULL;
