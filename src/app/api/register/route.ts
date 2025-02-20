@@ -128,7 +128,7 @@ export async function POST(request: Request) {
         ...(email ? { contact_email: email } : {}),
         ...(address ? { address: address } : {}),
         ...(encryptedImage ? { id_card: encryptedImage } : {}),
-        ...(encryptedFaceScan ? { face_scan: encryptedImage } : {}),
+        ...(encryptedFaceScan ? { face_scan: encryptedFaceScan } : {}),
       },
     });
 
