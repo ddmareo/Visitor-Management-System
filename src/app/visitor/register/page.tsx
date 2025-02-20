@@ -468,32 +468,32 @@ const Page = () => {
                   ?.required && <RequiredIndicator />}
               </label>
               {capturedImage ? (
-          <div className="space-y-2">
-            <div className="relative w-full max-w-md mx-auto">
-              <div className="aspect-[3/4] bg-gray-900 rounded-lg overflow-hidden">
-                <img 
-                  src={capturedImage} 
-                  alt="Captured face" 
-                  className="w-full h-full object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={handleRemoveCapturedImage}
-                  className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 focus:ring-2 focus:ring-red-300 focus:ring-offset-2"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowCamera(true)}
-              className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 flex items-center justify-center gap-2"
-            >
-              <Camera className="h-5 w-5" />
-              Ambil ulang foto
-            </button>
-          </div>
+                <div className="space-y-2">
+                  <div className="relative w-full max-w-md mx-auto">
+                    <div className="aspect-[3/4] bg-gray-900 rounded-lg overflow-hidden">
+                      <img 
+                        src={capturedImage} 
+                        alt="Captured face" 
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveCapturedImage}
+                        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 focus:ring-2 focus:ring-red-300 focus:ring-offset-2"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCamera(true)}
+                    className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 flex items-center justify-center gap-2"
+                  >
+                    <Camera className="h-5 w-5" />
+                    Ambil ulang foto
+                  </button>
+                </div>
               ) : (
                 <button
                   type="button"
