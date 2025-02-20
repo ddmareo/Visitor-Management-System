@@ -85,6 +85,7 @@ model visitor {
   address           String?   @db.Text
   registration_date DateTime? @default(now())
   id_card           Bytes?    @db.MediumBlob
+  face_scan         Bytes?    @db.MediumBlob
   visit             visit[]
   company           company   @relation(fields: [company_id], references: [company_id], onDelete: Restrict, onUpdate: Restrict)
 }
