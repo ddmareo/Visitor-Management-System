@@ -92,6 +92,7 @@ export async function GET(
       company_institution: visit.visitor?.company?.company_name,
       team_members: visit.teammember.map((member) => member.member_name),
       visit_category: mappedCategory,
+      face_scan: visit.visitor?.face_scan,
     };
 
     return new Response(JSON.stringify(transformedVisit), {

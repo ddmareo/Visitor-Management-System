@@ -5,7 +5,7 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Camera, X } from "lucide-react";
 import { encrypt, decrypt } from "@/utils/encryption";
-import CameraWindow from "@/components/camerawindow";
+import CameraRegister from "@/components/cameraregister";
 
 interface Company {
   id: string;
@@ -508,8 +508,7 @@ const Page = () => {
           )}
 
           {showCamera && (
-            <CameraWindow 
-              mode="capture"
+            <CameraRegister 
               onClose={handleCameraClose}
               onCapture={handleCameraCapture}
             />

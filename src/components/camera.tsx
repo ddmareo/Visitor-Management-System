@@ -2,20 +2,16 @@
 import React, { useRef, forwardRef, useImperativeHandle, useEffect, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
 
-export type CameraMode = 'capture' | 'verify';
-
 export interface CameraProps {
-  mode: CameraMode;
   onCapture: (imageData: string) => void;
   onStreamReady: (stream: MediaStream) => void;
-  referenceImage?: string; // Used in verify mode for visual reference
 }
 
 export interface CameraRef {
   captureImage: () => void;
 }
 
-const CameraObject = forwardRef<CameraRef, CameraProps>(({ mode, onCapture, onStreamReady, referenceImage }, ref) => {
+const CameraObject = forwardRef<CameraRef, CameraProps>(({ onCapture, onStreamReady }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -121,15 +117,6 @@ const CameraObject = forwardRef<CameraRef, CameraProps>(({ mode, onCapture, onSt
 
   return (
     <div className="relative w-full h-full bg-black">
-      {mode === 'verify' && referenceImage && (
-        <div className="absolute top-0 right-0 z-10 p-2">
-          <img 
-            src={referenceImage} 
-            alt="Reference" 
-            className="w-24 h-32 object-cover rounded-lg border-2 border-white"
-          />
-        </div>
-      )}
       <video
         ref={videoRef}
         autoPlay
