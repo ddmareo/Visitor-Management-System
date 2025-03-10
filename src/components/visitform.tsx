@@ -38,10 +38,14 @@ const Page = () => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   const [showCamera, setShowCamera] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
+  const [isVerified, setIsVerified] = useState(visitsData?.verification_status || false);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  console.log(visitsData?.face_scan);
+  useEffect(() => {
+    if (visitsData) {
+      setIsVerified(visitsData.verification_status);
+    }
+  }, [visitsData]);
 
   const handleQrScanSuccess = (scannedUrl: string) => {
     setQrCode(scannedUrl);
