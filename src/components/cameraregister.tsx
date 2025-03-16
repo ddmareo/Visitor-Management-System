@@ -1,6 +1,6 @@
 // cameraregister.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Camera, RotateCcw } from 'lucide-react';
+import { X, Camera, RotateCcw, CheckCircle } from 'lucide-react';
 import CameraObject, { CameraRef } from './camera';
 
 export interface CameraRegisterProps {
@@ -42,59 +42,69 @@ export default function CameraRegister({ onClose, onCapture }: CameraRegisterPro
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 w-full max-w-xl mx-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg text-gray-900 dark:text-white">Register Face</h2>
-          <button 
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-        
-        <div className="flex gap-4">
-          <div className="relative w-full">
-            <div className="aspect-[3/4] bg-gray-900 rounded-lg overflow-hidden">
-              {capturedImage ? (
-                <img 
-                  src={capturedImage} 
-                  alt="Captured" 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <CameraObject 
-                  ref={cameraRef}
-                  onCapture={handleCapture}
-                  onStreamReady={setStream}
-                />
-              )}
-            </div>
-          </div>
-          
-          <div className="flex flex-col gap-4 justify-center items-center">
-            <button
-              type="button"
-              onClick={capturedImage ? handleRetake : handleTakePhoto}
-              className="p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:ring-2 focus:ring-blue-300"
-              title={capturedImage ? "Retake photo" : "Take photo"}
+      <div className="bg-transparent p-4 w-full max-w-xl mx-4">        
+        <div className="relative w-full">
+          {/* Camera viewport with overlayed controls */}
+          <div className="aspect-[3/4] bg-gray-900 rounded-lg overflow-hidden relative">
+            {/* Camera or captured image */}
+            {capturedImage ? (
+              <img 
+                src={capturedImage} 
+                alt="Captured" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <CameraObject 
+                ref={cameraRef}
+                onCapture={handleCapture}
+                onStreamReady={setStream}
+              />
+            )}
+            
+            {/* Close button - always visible at top-right */}
+            <button 
+              onClick={onClose}
+              className="absolute top-4 right-4 bg-black/40 rounded-full p-2 text-white hover:bg-black/60 transition-colors"
+              aria-label="Close"
             >
-              {capturedImage ? (
-                <RotateCcw className="h-6 w-6" />
-              ) : (
-                <Camera className="h-6 w-6" />
-              )}
+              <X className="h-6 w-6" />
             </button>
             
-            {capturedImage && (
-              <button
-                type="button"
-                onClick={handleConfirm}
-                className="p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:ring-2 focus:ring-green-300 w-full"
-              >
-                Save Photo
-              </button>
-            )}
+            {/* Camera controls at the bottom */}
+            <div className="absolute bottom-0 left-0 right-0 flex justify-center items-center p-6 bg-gradient-to-t from-black/50 to-transparent">
+              {capturedImage ? (
+                /* Show these controls after capture */
+                <div className="flex justify-center items-center space-x-12 w-full">
+                  <button
+                    type="button"
+                    onClick={handleRetake}
+                    className="p-3 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+                    aria-label="Retake photo"
+                  >
+                    <RotateCcw className="h-8 w-8" />
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={handleConfirm}
+                    className="p-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
+                    aria-label="Save photo"
+                  >
+                    <CheckCircle className="h-8 w-8" />
+                  </button>
+                </div>
+              ) : (
+                /* Show capture button when camera is active */
+                <button
+                  type="button"
+                  onClick={handleTakePhoto}
+                  className="p-4 bg-white rounded-full hover:bg-gray-200 border-4 border-gray-300 transition-colors"
+                  aria-label="Take photo"
+                >
+                  <Camera className="h-8 w-8 text-gray-800" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
