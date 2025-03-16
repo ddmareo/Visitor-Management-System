@@ -89,6 +89,24 @@ const Page = () => {
     setShowCamera(false);
   };
 
+  const handleVerify = async () => {
+    if (!visitsData?.visit_id) return;
+
+    setIsVerifying(true);
+    setError("");
+
+    try {
+      await axios.put(`/api/visits/verify/${visitsData?.visit_id}`);
+      setIsVerified(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Verification failed");
+      setIsVerified(false);
+    } finally {
+      setIsVerifying(false);
+      await fetchVisitsData(qrCode);
+    }
+  };
+
   const handleCheckIn = async () => {
     if (!visitsData?.visit_id) return;
 
@@ -474,56 +492,56 @@ const Page = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            {!isVerified ? (
-              <button
-                onClick={handleOpenCamera}
-                disabled={isVerifying || !visitsData?.face_scan}
-                className={`px-6 py-2 text-white rounded-lg focus:ring-2 focus:ring-green-300 flex items-center gap-2 ${
-                  isVerifying || !visitsData?.face_scan
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-green-500 hover:bg-green-600'
-                }`}
-              >
-                {isVerifying ? (
-                  <span>Verifying...</span>
-                ) : (
-                  <span>Verify Face</span>
-                )}
-              </button>
-            ) : (
+          {isVerified ? (
+          <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
+            <div className="flex justify-between items-center">
               <div className="flex items-center gap-2 text-green-500">
                 <Check className="h-5 w-5" />
                 <span>Face Verified</span>
               </div>
-            )}
-          </div>
-
-          {isVerified && (
-            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
-              <div className="flex justify-end">
-                {!(visitsData.check_in_time && visitsData.check_out_time) && (
-                  <button
-                    className={`inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors ${
-                      isCheckinIn || isCheckingOut
-                        ? "opacity-50 cursor-not-allowed"
-                        : visitsData.check_in_time
-                        ? "bg-red-500 dark:bg-red-600 hover:bg-red-600 dark:hover:bg-red-700 focus:ring-red-500"
-                        : "bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 focus:ring-green-500"
-                    }`}
-                    onClick={
-                      visitsData.check_in_time ? handleCheckOut : handleCheckIn
-                    }
-                    disabled={isCheckinIn || isCheckingOut}>
-                    {isCheckinIn
-                      ? "Checking In..."
-                      : isCheckingOut
-                      ? "Checking Out..."
+              
+              {!(visitsData.check_in_time && visitsData.check_out_time) && (
+                <button
+                  className={`inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors ${
+                    isCheckinIn || isCheckingOut
+                      ? "opacity-50 cursor-not-allowed"
                       : visitsData.check_in_time
-                      ? "Check Out"
-                      : "Check In"}
-                  </button>
-                )}
+                      ? "bg-red-500 dark:bg-red-600 hover:bg-red-600 dark:hover:bg-red-700 focus:ring-red-500"
+                      : "bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 focus:ring-green-500"
+                  }`}
+                  onClick={
+                    visitsData.check_in_time ? handleCheckOut : handleCheckIn
+                  }
+                  disabled={isCheckinIn || isCheckingOut}>
+                  {isCheckinIn
+                    ? "Checking In..."
+                    : isCheckingOut
+                    ? "Checking Out..."
+                    : visitsData.check_in_time
+                    ? "Check Out"
+                    : "Check In"}
+                </button>
+              )}
+            </div>
+          </div>
+          ) : (
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex justify-end items-center">
+                <button
+                  onClick={handleOpenCamera}
+                  disabled={isVerifying || !visitsData?.face_scan}
+                  className={`inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors ${
+                    isVerifying || !visitsData?.face_scan
+                      ? "opacity-50 cursor-not-allowed"
+                      : "bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 focus:ring-green-500"
+                  }`}
+                >
+                  {isVerifying ? (
+                    <span>Verifying...</span>
+                  ) : (
+                    <span>Verify Face</span>
+                  )}
+                </button>
               </div>
             </div>
           )}
@@ -540,15 +558,7 @@ const Page = () => {
       {showCamera && (
         <CameraVerify
           onClose={() => handleCloseCamera()}
-          onVerificationComplete={(success, metrics) => {
-            if (success) {
-              setIsVerified(true);
-              console.log('Verification successful', metrics);
-            } else {
-              setIsVerified(false);
-              console.log('Verification failed');
-            }
-          }}
+          onVerificationComplete={handleVerify}
           referenceImage={visitsData?.face_scan}
         />
       )}

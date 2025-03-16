@@ -1,129 +1,118 @@
-import { FaceLandmarker, FaceLandmarkerResult, FilesetResolver } from '@mediapipe/tasks-vision';
+// utils/faceapi.ts
+import * as faceapi from 'face-api.js';
 
-export type FaceMetrics = {
-  similarity: number;
-  confidence: number;
-  landmarks: {
-    matched: number;
-    total: number;
-  };
-  qualityScore: number;
-};
-
-export type SerializedBuffer = {
-  data: number[];
-  type: "Buffer";
-};
-
-const SIMILARITY_THRESHOLD = 0.75;
-const CONFIDENCE_THRESHOLD = 0.8;
-
-export async function initializeFaceLandmarker(): Promise<FaceLandmarker> {
-  const vision = await FilesetResolver.forVisionTasks(
-    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
-  );
-
-  return await FaceLandmarker.createFromOptions(vision, {
-    baseOptions: {
-      modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-      delegate: "GPU"
-    },
-    outputFaceBlendshapes: true,
-    outputFacialTransformationMatrixes: true,
-    runningMode: "VIDEO"
-  });
-}
-
-async function serializedBufferToImageData(serializedBuffer: SerializedBuffer): Promise<ImageData> {
-  // Convert the serialized buffer data back to a proper Buffer/Uint8Array
-  const buffer = new Uint8Array(serializedBuffer.data);
-  
-  // Convert to base64
-  let binary = '';
-  buffer.forEach(byte => {
-    binary += String.fromCharCode(byte);
-  });
-  const base64String = btoa(binary);
-  const dataURL = `data:image/jpeg;base64,${base64String}`;
-  
-  // Create and load image
-  const img = new Image();
-  await new Promise((resolve, reject) => {
-    img.onload = resolve;
-    img.onerror = reject;
-    img.src = dataURL;
-  });
-
-  // Convert to ImageData
-  const canvas = document.createElement('canvas');
-  canvas.width = img.width;
-  canvas.height = img.height;
-  const ctx = canvas.getContext('2d')!;
-  ctx.drawImage(img, 0, 0);
-  
-  return ctx.getImageData(0, 0, canvas.width, canvas.height);
-}
-
-function calculateMetrics(
-  liveFace: FaceLandmarkerResult,
-  referenceFace: FaceLandmarkerResult
-): FaceMetrics {
-  const liveLandmarks = liveFace.faceLandmarks[0];
-  const refLandmarks = referenceFace.faceLandmarks[0];
-
-  const distances = liveLandmarks.map((landmark, i) => {
-    const refLandmark = refLandmarks[i];
-    return Math.sqrt(
-      Math.pow(landmark.x - refLandmark.x, 2) +
-      Math.pow(landmark.y - refLandmark.y, 2) +
-      Math.pow(landmark.z - refLandmark.z, 2)
-    );
-  });
-
-  const similarity = 1 - (distances.reduce((a, b) => a + b) / distances.length);
-  const confidence = (liveFace.faceBlendshapes?.[0]?.categories?.[0]?.score ?? 0);
-
-  return {
-    similarity,
-    confidence,
-    landmarks: {
-      matched: distances.filter(d => d < 0.1).length,
-      total: distances.length
-    },
-    qualityScore: similarity * confidence
-  };
-}
-
-export async function compareFaces(
-  faceLandmarker: FaceLandmarker,
-  liveImageBuffer: SerializedBuffer,
-  referenceImageBuffer: SerializedBuffer
-): Promise<FaceMetrics | null> {
+// Initialize face-api models
+export async function loadFaceApiModels() {
   try {
-    // Convert both buffers to ImageData
-    const [liveImage, referenceImage] = await Promise.all([
-      serializedBufferToImageData(liveImageBuffer),
-      serializedBufferToImageData(referenceImageBuffer)
+    // In Next.js app router, we need to use the public directory for models
+    const MODEL_URL = '/models';
+    
+    // Load all required models for face detection and recognition
+    await Promise.all([
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+      faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
     ]);
     
-    // Get face landmarks for both images
-    const liveFace = await faceLandmarker.detect(liveImage);
-    const referenceFace = await faceLandmarker.detect(referenceImage);
-
-    if (!liveFace.faceLandmarks?.[0] || !referenceFace.faceLandmarks?.[0]) {
-      return null; // No face detected in one or both images
-    }
-
-    return calculateMetrics(liveFace, referenceFace);
+    return true;
   } catch (error) {
-    console.error('Error comparing faces:', error);
+    console.error('Error loading face-api models:', error);
+    return false;
+  }
+}
+
+// Convert base64 to HTML Image element (needed for face-api)
+export function base64ToImage(base64Data: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = (err) => reject(err);
+    img.src = base64Data;
+  });
+}
+
+// Correctly typed function for face detection
+export async function getFaceDescriptor(
+  imageData: string
+): Promise<faceapi.WithFaceDescriptor<faceapi.WithFaceLandmarks<faceapi.WithFaceDetection<{}>>>[] | null> {
+  try {
+    const img = await base64ToImage(imageData);
+    
+    // Detect all faces and compute descriptors
+    const detections = await faceapi
+      .detectAllFaces(img)
+      .withFaceLandmarks()
+      .withFaceDescriptors();
+    
+    return detections;
+  } catch (error) {
+    console.error('Error getting face descriptor:', error);
     return null;
   }
 }
 
-export function isGoodMatch(metrics: FaceMetrics): boolean {
-  return (
-    metrics.similarity >= SIMILARITY_THRESHOLD &&
-    metrics.confidence >= CONFIDENCE_THRESHOLD
-  );
+// Compare faces and return similarity score
+export async function compareFaces(
+  referenceImageData: string, 
+  capturedImageData: string
+): Promise<{ 
+  isMatch: boolean; 
+  score: number; 
+  multipleFaces?: boolean;
+  noFacesDetected?: boolean;
+} | null> {
+  try {
+    // Get face descriptors from both images
+    const referenceDescriptors = await getFaceDescriptor(referenceImageData);
+    const capturedDescriptors = await getFaceDescriptor(capturedImageData);
+
+    // Check if faces were detected in both images
+    if (!referenceDescriptors || !capturedDescriptors) {
+      return { 
+        isMatch: false, 
+        score: 0,
+        noFacesDetected: true 
+      };
+    }
+
+    // Check if multiple faces were detected
+    if (referenceDescriptors.length > 1 || capturedDescriptors.length > 1) {
+      return {
+        isMatch: false,
+        score: 0,
+        multipleFaces: true
+      };
+    }
+
+    // Check if no faces were detected
+    if (referenceDescriptors.length === 0 || capturedDescriptors.length === 0) {
+      return {
+        isMatch: false,
+        score: 0,
+        noFacesDetected: true
+      };
+    }
+
+    // Get the descriptors from the detected faces
+    const referenceDescriptor = referenceDescriptors[0].descriptor;
+    const capturedDescriptor = capturedDescriptors[0].descriptor;
+
+    // Compare the descriptors using Euclidean distance
+    const distance = faceapi.euclideanDistance(referenceDescriptor, capturedDescriptor);
+    
+    // Convert distance to similarity score (0-1, where 1 is perfect match)
+    // Face-api uses Euclidean distance, so lower is better
+    // Typical threshold for a good match is around 0.6 or lower
+    const maxDistance = 1.0;
+    const score = Math.max(0, 1 - distance / maxDistance);
+    
+    // Determine if it's a match (you can adjust this threshold)
+    const threshold = 0.4; // Adjust this based on testing
+    const isMatch = distance <= threshold;
+
+    return { isMatch, score };
+  } catch (error) {
+    console.error('Error comparing faces:', error);
+    return null;
+  }
 }

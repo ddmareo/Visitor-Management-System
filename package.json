@@ -9,17 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@mediapipe/tasks-vision": "^0.10.21",
     "@prisma/client": "^5.20.0",
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
     "csv-parse": "^5.5.6",
     "date-fns-tz": "^3.2.0",
+    "face-api.js": "^0.22.2",
     "flatpickr": "^4.6.13",
     "lucide-react": "^0.453.0",
     "mysql2": "^3.12.0",
     "next": "^14.2.14",
     "next-auth": "^4.24.8",
+    "node-fetch": "2.6.7",
     "qr-scanner": "^1.4.2",
     "qrcode": "^1.5.4",
     "react": "^18",
@@ -48,5 +49,8 @@
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+  }, 
+  "overrides": {
+    "node-fetch": "2.6.7"
   }
 }
