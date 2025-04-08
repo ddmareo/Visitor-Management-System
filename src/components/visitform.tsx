@@ -4,8 +4,7 @@ import React, { useState, useEffect } from "react";
 import { QrCode, Search, Check } from "lucide-react";
 import QrScannerPopup from "./qrscannerwindow";
 import axios from "axios";
-
-import CameraVerify from "./cameraverify";
+import FaceScanModal from "./facescanmodal";
 
 interface VisitsData {
   visit_id: string;
@@ -556,10 +555,11 @@ const Page = () => {
       )}
 
       {showCamera && (
-        <CameraVerify
+        <FaceScanModal
+          mode="verify"
           onClose={() => handleCloseCamera()}
-          onVerificationComplete={handleVerify}
           referenceImage={visitsData?.face_scan}
+          onVerificationComplete={handleVerify}
         />
       )}
 

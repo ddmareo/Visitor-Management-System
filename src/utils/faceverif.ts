@@ -116,3 +116,20 @@ export async function compareFaces(
     return null;
   }
 }
+
+export async function detectFaces(
+  input: HTMLVideoElement | HTMLImageElement,
+  options: faceapi.SsdMobilenetv1Options | faceapi.TinyFaceDetectorOptions | undefined = undefined
+): Promise<faceapi.WithFaceDetection<{}>[]> {
+  // Use SSD MobileNetV1 by default as it's generally a good balance
+  const detectorOptions = options || new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 });
+
+  try {
+      const detections = await faceapi.detectAllFaces(input, detectorOptions);
+      // Map each detection to an object with a detection property
+      return detections.map(detection => ({ detection }));
+  } catch (error) {
+      console.error('Error during face detection:', error);
+      return []; // Return empty array on error
+  }
+}

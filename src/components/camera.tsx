@@ -9,6 +9,7 @@ export interface CameraProps {
 
 export interface CameraRef {
   captureImage: () => void;
+  videoElement: HTMLVideoElement | null; // <-- Add this
 }
 
 const CameraObject = forwardRef<CameraRef, CameraProps>(({ onCapture, onStreamReady }, ref) => {
@@ -101,7 +102,8 @@ const CameraObject = forwardRef<CameraRef, CameraProps>(({ onCapture, onStreamRe
   };
 
   useImperativeHandle(ref, () => ({
-    captureImage
+    captureImage,
+    videoElement: videoRef.current 
   }));
 
   if (error) {
