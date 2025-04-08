@@ -1,6 +1,6 @@
 // FaceScanModal.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Camera, RotateCcw, CheckCircle, XCircle, Loader2, ScanFace } from 'lucide-react';
+import { X, Camera, RotateCcw, CheckCircle, XCircle, Loader2, ScanFace, CameraOff } from 'lucide-react';
 import CameraObject, { CameraRef } from './camera'; // Assuming camera.tsx is in the same folder or adjust path
 import { loadFaceApiModels, compareFaces, detectFaces } from '@/utils/faceverif'; // Assuming path
 import { cropImageToAspectRatio } from '@/utils/cropfacescan';
@@ -41,33 +41,31 @@ const TARGET_ASPECT_RATIO = 3 / 4; // Define target ratio
 const FACE_CENTER_THRESHOLD_X = 0.3; // Allows center point within central 40% (1 - 2*0.3)
 const FACE_CENTER_THRESHOLD_Y = 0.4; // Allows center point within central 50% (1 - 2*0.25)
 const DETECTION_INTERVAL = 150; // ms between detections (adjust for performance)
-const AUTO_CAPTURE_DELAY = 1500; // ms - How long face must be valid before auto-capture
+const AUTO_CAPTURE_DELAY = 3000; // ms - How long face must be valid before auto-capture
 
 export default function FaceScanModal(props: FaceScanModalProps) {
   const { onClose, mode } = props; // Common props
 
   // State common to both modes
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const cameraRef = useRef<CameraRef>(null);
-  const [cameraError, setCameraError] = useState<string | null>(null); // Handle camera errors here
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
-  // State specific to 'verify' mode
-  const [verifying, setVerifying] = useState(false);
-  const [verificationResult, setVerificationResult] = useState<{
-    success: boolean;
-    score?: number;
-    message?: string;
-  } | null>(null);
+  // Model Loading
   const [modelsLoaded, setModelsLoaded] = useState(false);
-  const [loadingModels, setLoadingModels] = useState(true); // Only load if in verify mode initially
+  const [loadingModels, setLoadingModels] = useState(true);
 
-  // Live Validation State (primarily for 'register' mode pre-capture, but useful for 'verify' too)
+  // Live Validation & Auto-Capture (Used by both modes now)
   const [validationStatus, setValidationStatus] = useState<ValidationStatus>('idle');
   const [validationMessage, setValidationMessage] = useState<string | null>('Initializing...');
   const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const isDetectingRef = useRef(false); // Prevent overlapping detections
+  const isDetectingRef = useRef(false);
+  const validStartTimeRef = useRef<number | null>(null); // Ref to track when face became valid
 
+  // Verification Specific ('verify' mode)
+  const [verifying, setVerifying] = useState(false); // Tracks the compareFaces API call
+  const [verificationResult, setVerificationResult] = useState<{ success: boolean; score?: number; message?: string } | null>(null);
+  const verificationInProgressRef = useRef(false); // Flag to prevent re-triggering auto-capture while one is processing
   // --- Effects ---
 
   // Effect 1: Load Models (Runs once or if mode changes)
@@ -114,254 +112,294 @@ export default function FaceScanModal(props: FaceScanModalProps) {
         };
     }, [stream]); // Depend only on stream
 
-    // Effect 3: Live Face Detection Loop
-  useEffect(() => {
-    // Ensure cleanup occurs if dependencies change
-    const cleanupDetection = () => {
-         if (detectionIntervalRef.current) {
+    useEffect(() => {
+        const cleanupDetection = () => {
+          if (detectionIntervalRef.current) {
             clearInterval(detectionIntervalRef.current);
             detectionIntervalRef.current = null;
+          }
+          isDetectingRef.current = false;
+          validStartTimeRef.current = null; // Reset timer on cleanup
+        };
+    
+        // Run loop if models loaded, stream ready, and video element exists
+        // Also check for cameraError
+        if (modelsLoaded && stream && cameraRef.current?.videoElement && !cameraError && !loadingModels) {
+          const videoElement = cameraRef.current.videoElement;
+    
+           // Check if verification is already completed (success/fail) - if so, don't restart loop unless retried
+           if (mode === 'verify' && verificationResult) {
+               cleanupDetection();
+               return;
+           }
+    
+    
+          const checkVideoAndStart = () => {
+              if (videoElement.readyState >= videoElement.HAVE_METADATA) {
+                startDetectionLoop(videoElement);
+              } else {
+                 setValidationMessage("Waiting for video...");
+                 videoElement.addEventListener('loadedmetadata', startDetectionLoop.bind(null, videoElement), { once: true });
+              }
+          };
+    
+          // Ensure verification reference image exists for verify mode before starting loop
+          if (mode === 'verify') {
+              const verifyProps = props as VerifyProps; // Type assertion
+              if (!verifyProps.referenceImage) {
+                  setValidationStatus('error');
+                  setValidationMessage('Reference image missing for verification.');
+                  cleanupDetection();
+                  return; // Don't start loop if reference is missing
+              }
+          }
+    
+    
+          checkVideoAndStart();
+    
+        } else {
+          cleanupDetection(); // Conditions not met, ensure loop is stopped
+           if (!modelsLoaded && !loadingModels) { setValidationMessage("Models failed to load."); setValidationStatus('error'); }
+           else if (!stream && !loadingModels) { setValidationMessage("Initializing camera..."); setValidationStatus('idle'); }
+           else if (cameraError) { setValidationMessage(cameraError); setValidationStatus('error');}
         }
-        isDetectingRef.current = false;
-        // Reset status when loop stops? Maybe not, keep last known status until capture/retake
-        // setValidationStatus('idle');
-        // setValidationMessage('Camera inactive or models not loaded.');
-    };
-
-    if (mode === 'register' && modelsLoaded && stream && cameraRef.current?.videoElement) {
-      const videoElement = cameraRef.current.videoElement;
-
-       if (videoElement.readyState < videoElement.HAVE_METADATA) {
-           // Wait for video metadata to be loaded
-           const handleMetadataLoaded = () => {
-               startDetectionLoop(videoElement);
-               videoElement.removeEventListener('loadedmetadata', handleMetadataLoaded);
-           };
-           videoElement.addEventListener('loadedmetadata', handleMetadataLoaded);
-           setValidationMessage("Waiting for video...");
-           return cleanupDetection; // Cleanup if effect re-runs before metadata loads
-       } else {
-           // Metadata already loaded, start immediately
-           startDetectionLoop(videoElement);
-       }
-    } else if (mode === 'verify' /* && potentially add conditions for live verify later */) {
-        // Placeholder: Live detection logic for verify mode could go here
-        // For now, verify mode doesn't use live pre-capture validation in this example
-        cleanupDetection(); // Ensure no loop runs in verify mode for now
-        setValidationStatus('idle'); // Reset for verify mode
-        setValidationMessage('');
-    } else {
-       // Conditions not met (no stream, models not loaded, etc.)
-       cleanupDetection();
-       // Update status if needed based on why loop isn't running
-       if (!modelsLoaded && !loadingModels) {
-           setValidationMessage("Models failed to load.");
-           setValidationStatus('error');
-       } else if (!stream) {
-            setValidationMessage("Initializing camera...");
-            setValidationStatus('idle');
-       }
-    }
-
-    // Cleanup function for the effect
-    return cleanupDetection;
-
-  }, [mode, modelsLoaded, loadingModels, stream, cameraRef.current?.videoElement]); // Dependencies
+    
+        return cleanupDetection; // Cleanup on unmount or dependency change
+    
+       }, [mode, modelsLoaded, loadingModels, stream, cameraRef.current?.videoElement, cameraError, verificationResult, props]); // Add verificationResult and props
+    
 
     // --- Detection Loop Function ---
     const startDetectionLoop = (videoElement: HTMLVideoElement) => {
-        if (detectionIntervalRef.current) { // Clear any existing interval
-            clearInterval(detectionIntervalRef.current);
-        }
-        isDetectingRef.current = false; // Reset detection flag
+        if (detectionIntervalRef.current) clearInterval(detectionIntervalRef.current);
+        isDetectingRef.current = false;
+        validStartTimeRef.current = null; // Reset timer when loop starts/restarts
 
         detectionIntervalRef.current = setInterval(async () => {
-            if (!cameraRef.current?.videoElement || videoElement.paused || videoElement.ended || !modelsLoaded || isDetectingRef.current) {
-            return; // Skip if video not ready, paused, ended, models unloaded, or already detecting
-            }
+        if (!cameraRef.current?.videoElement || videoElement.paused || videoElement.ended || !modelsLoaded || isDetectingRef.current || verificationInProgressRef.current) {
+            return; // Skip if busy, paused, ended, models unloaded, or verification running
+        }
 
-            if (videoElement.readyState < videoElement.HAVE_CURRENT_DATA) {
-                // Not enough data yet
-                setValidationStatus('detecting');
-                setValidationMessage("Waiting for video data...");
-                return;
-            }
+        if (videoElement.readyState < videoElement.HAVE_CURRENT_DATA) return; // Skip if not enough data
 
-            isDetectingRef.current = true; // Set detection flag
+        isDetectingRef.current = true;
 
-            try {
-            // Use lower resolution input for faster detection if needed
+        try {
             const detectionOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 });
-            // console.time("detection"); // Optional: time detection
-            const detections = await detectFaces(videoElement, detectionOptions);
-            // console.timeEnd("detection");
-
+            const detections = await detectFaces(videoElement, detectionOptions); // Detect faces in the video stream
             const videoWidth = videoElement.videoWidth;
             const videoHeight = videoElement.videoHeight;
 
+            let currentStatus: ValidationStatus = 'idle';
+            let currentMessage: string | null = null;
+
             if (detections.length === 0) {
-                setValidationStatus('no_face');
-                setValidationMessage('No face detected.');
+            currentStatus = 'no_face';
+            currentMessage = 'No face detected.';
             } else if (detections.length > 1) {
-                setValidationStatus('multiple_faces');
-                setValidationMessage('Multiple faces detected.');
+            currentStatus = 'multiple_faces';
+            currentMessage = 'Multiple faces detected.';
             } else {
-                // Exactly one face detected, check position
-                const box = detections[0].detection.box;
-                const faceCenterX = box.x + box.width / 2;
-                const faceCenterY = box.y + box.height / 2;
+            const box = detections[0].detection.box;
+            const faceCenterX = box.x + box.width / 2;
+            const faceCenterY = box.y + box.height / 2;
 
-                const isCenteredX =
-                faceCenterX > videoWidth * FACE_CENTER_THRESHOLD_X &&
-                faceCenterX < videoWidth * (1 - FACE_CENTER_THRESHOLD_X);
-                const isCenteredY =
-                faceCenterY > videoHeight * FACE_CENTER_THRESHOLD_Y &&
-                faceCenterY < videoHeight * (1 - FACE_CENTER_THRESHOLD_Y);
+            const isCenteredX = faceCenterX > videoWidth * FACE_CENTER_THRESHOLD_X && faceCenterX < videoWidth * (1 - FACE_CENTER_THRESHOLD_X);
+            const isCenteredY = faceCenterY > videoHeight * FACE_CENTER_THRESHOLD_Y && faceCenterY < videoHeight * (1 - FACE_CENTER_THRESHOLD_Y);
 
-                if (isCenteredX && isCenteredY) {
-                setValidationStatus('valid');
-                setValidationMessage('Ready to capture!');
-                } else {
-                setValidationStatus('off_center');
-                setValidationMessage('Please center your face.');
+            if (isCenteredX && isCenteredY) {
+                currentStatus = 'valid';
+                currentMessage = mode === 'register' ? 'Ready to capture!' : 'Hold still...'; // Different message for verify
+            } else {
+                currentStatus = 'off_center';
+                currentMessage = 'Please center face.';
+            }
+            }
+
+            // Update state for UI feedback
+            setValidationStatus(currentStatus);
+            setValidationMessage(currentMessage);
+
+            // --- Auto-Capture Logic (Verify Mode Only) ---
+            if (mode === 'verify' && currentStatus === 'valid') {
+            if (validStartTimeRef.current === null) {
+                // Start timer
+                validStartTimeRef.current = Date.now();
+            } else {
+                // Timer running, check if delay exceeded
+                if (Date.now() - validStartTimeRef.current >= AUTO_CAPTURE_DELAY) {
+                // Threshold met, trigger capture and verification
+                console.log("Auto-capture threshold met.");
+                validStartTimeRef.current = null; // Reset timer immediately
+                if (!verificationInProgressRef.current) { // Double check flag
+                    cameraRef.current?.captureImage(); // Trigger capture
+                    // handleCapture will now initiate the verification flow
+                }
                 }
             }
-            } catch (error) {
+            } else {
+            // Status is not 'valid', reset timer
+            validStartTimeRef.current = null;
+            }
+
+        } catch (error) {
             console.error('Error during face detection loop:', error);
             setValidationStatus('error');
             setValidationMessage('Detection error occurred.');
-            // Consider stopping the loop on error?
-            // if (detectionIntervalRef.current) clearInterval(detectionIntervalRef.current);
-            } finally {
-                isDetectingRef.current = false; // Reset detection flag
-            }
-        }, DETECTION_INTERVAL); // Run detection periodically
+            validStartTimeRef.current = null; // Reset timer on error
+        } finally {
+            isDetectingRef.current = false;
+        }
+        }, DETECTION_INTERVAL);
     };
 
   // --- Handlers ---
 
-  const handleStreamReady = (mediaStream: MediaStream) => {
-    setStream(mediaStream);
-    setCameraError(null); // Clear previous errors on stream ready
-  };
+    const handleStreamReady = (mediaStream: MediaStream) => {
+        setStream(mediaStream);
+        setCameraError(null);
+        setValidationStatus('detecting'); // Indicate detection will start
+        setValidationMessage('Detecting face...');
+    };
   
+    // Modified Capture Handler
     const handleCapture = async (rawImageData: string) => {
-        // Stop detection loop on capture
-        if (detectionIntervalRef.current) {
-            clearInterval(detectionIntervalRef.current);
-            detectionIntervalRef.current = null;
-        }
-        isDetectingRef.current = false;
+        // Stop detection *timer* but not necessarily the loop itself for verify mode
+        validStartTimeRef.current = null;
 
-    setCapturedImage(null); // Clear previous while processing
-    // ... (cropping logic using cropImageToAspectRatio remains the same)
+        if (mode === 'register') {
+            // Stop full detection loop for register mode after capture
+            if (detectionIntervalRef.current) {
+                console.log("Register Capture: Stopping detection loop.");
+                clearInterval(detectionIntervalRef.current);
+                detectionIntervalRef.current = null;
+            }
+            isDetectingRef.current = false;
+
+            try {
+                console.log("Register: Cropping image...");
+                const croppedImageData = await cropImageToAspectRatio(rawImageData, TARGET_ASPECT_RATIO);
+                // Set the capturedImage state for preview in register mode
+                setCapturedImageState(croppedImageData);
+                console.log("Register: Crop successful. Showing preview.");
+                // Clear validation message now that preview is shown
+                setValidationMessage('');
+                setValidationStatus('idle'); // Reset status after capture
+            } catch (error) {
+                console.error("Register: Failed to crop captured image:", error);
+                setValidationStatus('error');
+                setValidationMessage('Image processing failed.');
+            }
+        } else if (mode === 'verify') {
+            if (verificationInProgressRef.current) {
+                console.log("Verification already in progress, skipping new capture trigger.");
+                return; // Avoid race conditions
+            }
+            verificationInProgressRef.current = true; // Set flag
+            setVerifying(true); // Update state for UI loading indicator
+            setValidationMessage("Verifying..."); // Update UI message
+
+            try {
+                console.log("Verify: Cropping image...");
+                const croppedImageData = await cropImageToAspectRatio(rawImageData, TARGET_ASPECT_RATIO);
+                console.log("Verify: Crop successful. Comparing faces...");
+                await performVerification(croppedImageData); // Call verification logic
+            } catch (error) {
+                console.error("Verify: Failed to crop or verify image:", error);
+                setVerificationResult({ success: false, message: 'Image processing or verification failed.' });
+                setVerifying(false);
+                verificationInProgressRef.current = false; // Reset flag on error
+                // Keep validation message or update?
+                setValidationMessage('Verification failed.'); // Update message
+                // Don't restart loop here, let the retry mechanism handle it
+            }
+        }
+    };
+
+     // Extracted state setting for register mode preview
+    const [capturedImageState, setCapturedImageState] = useState<string | null>(null);
+
+    // Verification Logic Function
+    const performVerification = async (capturedCroppedData: string) => {
+        const verifyProps = props as VerifyProps; // Type assertion needed for props access
+        if (!verifyProps.referenceImage) {
+            console.error("Verification aborted: Reference image missing.");
+            setVerificationResult({ success: false, message: "Reference image missing." });
+            setVerifying(false);
+            verificationInProgressRef.current = false;
+            return;
+        }
+
         try {
-        const croppedImageData = await cropImageToAspectRatio(rawImageData, TARGET_ASPECT_RATIO);
-        setCapturedImage(croppedImageData);
-        setVerificationResult(null);
-        // Keep validation status to indicate why capture was allowed, or clear it
-        // setValidationStatus('idle');
-        // setValidationMessage('');
+            const result = await compareFaces(verifyProps.referenceImage, capturedCroppedData);
+
+            if (!result) {
+                throw new Error('Face comparison failed or returned null');
+            }
+
+            let message: string | undefined = undefined;
+            if (result.noFacesDetected) message = 'No face detected in verification image.'; // Should be rare due to pre-check
+            else if (result.multipleFaces) message = 'Multiple faces detected in verification image.'; // Should be rare
+            else if (!result.isMatch) message = 'Verification Failed.';
+            else message = 'Verification Successful!';
+
+            const finalResult = { success: result.isMatch, score: result.score, message: message };
+            setVerificationResult(finalResult);
+
+            if (finalResult.success && props.onVerificationComplete) {
+                props.onVerificationComplete(finalResult.success, finalResult.score);
+                setTimeout(onClose, 1500); // Auto close on success
+            } else if (!finalResult.success && props.onVerificationComplete) {
+                props.onVerificationComplete(finalResult.success, finalResult.score);
+                // Don't auto-close on failure, wait for retry/manual close
+            }
+
         } catch (error) {
-            console.error("Failed to crop captured image:", error);
-            setVerificationResult({ success: false, message: 'Failed to process image. Please retake.' });
-            setValidationStatus('error'); // Reflect crop error
-            setValidationMessage('Image processing failed.');
+            console.error('Verification error:', error);
+            setVerificationResult({ success: false, message: 'An error occurred during comparison.' });
+            if (props.mode === 'verify' && props.onVerificationComplete) {
+                props.onVerificationComplete(false);
+            }
+        } finally {
+            setVerifying(false); // Clear loading state
+            verificationInProgressRef.current = false; // Reset flag ONLY after processing finishes
         }
     };
 
     const handleRetake = () => {
-        setCapturedImage(null);
-        setVerificationResult(null);
-        // Restart detection loop only if conditions are still met
-        if (mode === 'register' && modelsLoaded && stream && cameraRef.current?.videoElement) {
-            startDetectionLoop(cameraRef.current.videoElement);
-            setValidationStatus('detecting'); // Initial state after retake
-            setValidationMessage('Detecting face...');
-        } else {
-            setValidationStatus('idle');
-            setValidationMessage(''); // Or appropriate message
-        }
-    };
+        setCapturedImageState(null); // Clear register preview if any
+        setVerificationResult(null); // Clear verification result
+        setVerifying(false); // Ensure verifying state is off
+        verificationInProgressRef.current = false; // Reset flag
+        validStartTimeRef.current = null; // Reset timer
+
+        // Restart detection loop (effect 3 will handle this based on state changes)
+        // Explicitly reset validation status to trigger loop restart if needed
+        setValidationStatus('idle');
+        setValidationMessage('Retrying...');
+        // The useEffect[3] dependency on verificationResult being null should re-trigger the loop start
+   };
     
-
-    const handleTakePhoto = () => {
-        // Capture should only be possible if validationStatus is 'valid'
-        if (validationStatus === 'valid') {
-            cameraRef.current?.captureImage();
-        } else {
-            console.warn("Attempted to capture photo when validation status was not 'valid'. Status:", validationStatus);
-            // Optionally provide feedback why capture isn't allowed yet
-            // e.g., shake the button, show a temporary message
+    // Register Mode: Confirm Button Handler
+    const handleRegisterConfirm = () => {
+        if (mode === 'register' && props.mode === 'register' && capturedImageState) {
+        props.onRegisterConfirm(capturedImageState);
+        onClose();
         }
     };
 
-  // Combined handler for the final action button
-  const handleConfirmOrVerify = async () => {
-    if (!capturedImage) return;
+    // --- Derived State / Render Flags ---
+    const isRegisterCaptureDisabled = mode === 'register' && validationStatus !== 'valid';
+    const showRegisterPreview = mode === 'register' && !!capturedImageState; // True if in register mode AND image is captured
 
-    if (mode === 'register' && props.mode === 'register' && capturedImage) { // Type guard
-      props.onRegisterConfirm(capturedImage);
-      onClose(); // Typically close after registration confirmation
-    } else if (mode === 'verify' && props.mode === 'verify' && capturedImage) { // Type guard
-        if (!props.referenceImage || !modelsLoaded || verificationResult?.message?.includes('load')) { // Prevent verification if models failed to load
-            setVerificationResult({
-                success: false,
-                message: !props.referenceImage ? 'Missing reference image.' : 'Face models not ready.',
-            });
-            return;
-        }
-      setVerifying(true);
-      setVerificationResult(null); // Clear previous result before new attempt
-
-      try {
-        const result = await compareFaces(props.referenceImage, capturedImage);
-
-        if (!result) {
-          throw new Error('Face comparison failed or returned null');
-        }
-
-        let message: string | undefined = undefined;
-        if (result.noFacesDetected) message = 'No face detected in one or both images.';
-        else if (result.multipleFaces) message = 'Multiple faces detected. Please ensure only one face is in the frame.';
-        else if (!result.isMatch) message = 'Verification Failed.';
-        else message = 'Verification Successful!'; // Or keep it undefined for success
-
-        const finalResult = {
-            success: result.isMatch,
-            score: result.score,
-            message: message,
-        };
-
-        setVerificationResult(finalResult);
-        props.onVerificationComplete(finalResult.success, finalResult.score);
-
-        if (finalResult.success) {
-          setTimeout(onClose, 1500); // Auto close on success
-        }
-      } catch (error) {
-        console.error('Verification error:', error);
-        const errorResult = {
-          success: false,
-          message: 'An error occurred during verification.',
-        };
-        setVerificationResult(errorResult);
-        props.onVerificationComplete(errorResult.success);
-      } finally {
-        setVerifying(false);
-      }
-    }
-  };
+    // Show camera view if: not loading models, no camera error, AND
+    // ( (it's register mode AND we are NOT showing the preview) OR
+    //   (it's verify mode AND verification hasn't successfully completed yet) )
+    const showCameraView = !loadingModels && !cameraError &&
+                           ( (mode === 'register' && !showRegisterPreview) ||
+                             (mode === 'verify' && !verificationResult?.success) );
 
   // --- Render Logic ---
-
-  const showLoadingOverlay = mode === 'verify' && loadingModels;
-  const showModelLoadErrorOverlay = mode === 'verify' && !loadingModels && !modelsLoaded;
-  const isCaptureDisabled = mode === 'register' && validationStatus !== 'valid'; // Disable capture if not valid
-  const showCamera = !capturedImage && !showLoadingOverlay && !showModelLoadErrorOverlay;
-  const showPreview = !!capturedImage && !showLoadingOverlay && !showModelLoadErrorOverlay;
-
-  const isActionDisabled = (mode === 'verify' && (!modelsLoaded || verifying || loadingModels));
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -399,43 +437,53 @@ export default function FaceScanModal(props: FaceScanModalProps) {
 
             {/* 2. Camera Feed or Captured Image */}
             <div className="relative w-full h-full z-10">
-              {showCamera ? (
-                <CameraObject
-                  ref={cameraRef}
-                  onCapture={handleCapture} // Uses the new async handler with cropping
-                  onStreamReady={handleStreamReady}
-                  // onError={setCameraError} // Pass camera errors up if needed
-                />
-              ) : capturedImage ? (
-                 // Display captured (and cropped) image
-                 <img
-                    src={capturedImage}
-                    alt="Captured"
-                    className="w-full h-full object-cover"
-                  />
-              ) : null /* Placeholder while loading/error shown */}
+                {showCameraView ? (
+                    <CameraObject
+                        ref={cameraRef}
+                        onCapture={handleCapture}
+                        onStreamReady={handleStreamReady}
+                    />
+                ) : showRegisterPreview ? ( // Check specific flag for register preview
+                    // Show preview ONLY in register mode after capture
+                    <img
+                        src={capturedImageState}
+                        alt="Captured"
+                        className="w-full h-full object-cover"
+                    />
+                ) : mode === 'verify' && verificationResult?.success ? (
+                    // Optional: Show verify success confirmation
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-green-600/90">
+                        <CheckCircle className="h-16 w-16 text-white mb-4" />
+                        <p className="text-white text-xl font-semibold">Verified!</p>
+                    </div>
+                 ) : (
+                     // Fallback (e.g., camera error state shown by overlay, verify success before close)
+                      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                          <CameraOff className="h-12 w-12 text-gray-500" />
+                      </div>
+                 )}
             </div>
 
-
-             {/* 3. Live Validation Overlay (Only when camera active in register mode) */}
-             {mode === 'register' && showCamera && modelsLoaded && !cameraError && (
-                 <div className="absolute inset-0 z-20 pointer-events-none"> {/* Overlay doesn't block clicks */}
-                    {/* Centering Guide Example (optional but helpful) */}
+            {/* 3. Live Validation & Verification Status Overlays (Over camera) */}
+            {/* A. Show Live Validation Guide & Text (when camera active AND not verifying AND no final result) */}
+            {showCameraView && !verifying && !verificationResult && (
+                 <div className="absolute inset-0 z-20 pointer-events-none"> {/* Guide Overlay */}
+                    {/* Centering Guide Ellipse */}
                     <div className="absolute inset-0 flex items-center justify-center">
                          <div className={`border-2 dashed rounded-full transition-colors duration-300
                              ${validationStatus === 'valid' ? 'border-green-500/80' : ''}
                              ${validationStatus === 'no_face' || validationStatus === 'multiple_faces' ? 'border-red-500/80' : ''}
                              ${validationStatus === 'off_center' ? 'border-yellow-500/80' : ''}
-                             ${validationStatus === 'detecting' ? 'border-blue-500/50 animate-pulse' : ''}
-                             ${validationStatus === 'idle' || validationStatus === 'error' ? 'border-transparent' : ''}
+                             ${validationStatus === 'detecting' || validationStatus === 'idle' ? 'border-blue-500/50 animate-pulse' : ''}
+                             ${validationStatus === 'error' ? 'border-red-700/70' : ''}
                              `}
                               // Adjust size based on thresholds
                               style={{
                                 width: `${(1 - 2 * FACE_CENTER_THRESHOLD_X) * 100}%`,
                                 height: `${(1 - 2 * FACE_CENTER_THRESHOLD_Y) * 100}%`,
-                                maxWidth: '70%', // prevent guide from being too large on wider screens
+                                maxWidth: '70%', // prevent guide from being too large
                                 maxHeight: '70%',
-                             }}
+                              }}
                          ></div>
                     </div>
 
@@ -443,18 +491,51 @@ export default function FaceScanModal(props: FaceScanModalProps) {
                     {validationMessage && (
                         <div className={`absolute bottom-28 left-0 right-0 text-center p-2 transition-opacity duration-300
                             ${validationStatus === 'error' ? 'text-red-400 font-semibold' : 'text-white/90'}
-                            ${validationStatus === 'valid' ? 'text-green-400 font-bold' : ''} `} >
-                            <p className="text-sm bg-black/30 px-2 py-1 rounded backdrop-blur-sm inline-block">{validationMessage}</p>
+                            ${validationStatus === 'valid' ? (mode === 'register' ? 'text-green-400 font-bold' : 'text-blue-300 font-semibold') : ''}
+                             `} >
+                            <p className="text-sm bg-black/40 px-2 py-1 rounded backdrop-blur-sm inline-block">{validationMessage}</p>
                         </div>
                     )}
                  </div>
              )}
 
-             {/* 4. Verification Result Overlay (Only in verify mode AFTER capture/verify attempt) */}
-             {mode === 'verify' && verificationResult && capturedImage && (
-                 <div className={`absolute inset-0 flex flex-col items-center justify-center p-4 text-center z-30
-                    ${verificationResult.success ? 'bg-green-600/80' : 'bg-red-600/80'}`}>
-                    {/* ... verification result icons and text ... */}
+            {/* B. Show Verification Processing / Final Result Overlay (Verify Mode Only) */}
+            {mode === 'verify' && (verifying || verificationResult) && (
+                 // This overlay uses z-30, so it appears *above* the z-20 guide when active
+                 <div className={`absolute inset-0 z-30 flex flex-col items-center justify-center p-4 text-center transition-opacity duration-300
+                    ${verifying ? 'bg-black/60 backdrop-blur-sm' : ''}
+                    ${verificationResult && !verificationResult.success ? 'bg-red-600/90' : ''}
+                    ${verificationResult && verificationResult.success ? 'bg-green-600/90' : ''} `}>
+
+                    {/* Spinner when verifying */}
+                    {verifying && !verificationResult && (
+                         <>
+                             <Loader2 className="h-10 w-10 text-blue-400 animate-spin mb-3" />
+                             <p className="text-white font-semibold">{validationMessage || 'Verifying...'}</p>
+                         </>
+                    )}
+
+                    {/* Result Icons/Text/Retry when verificationResult exists */}
+                    {verificationResult && !verifying && (
+                        <>
+                            {verificationResult.success ? ( <CheckCircle className="h-16 w-16 text-white mb-2" /> )
+                             : ( <XCircle className="h-16 w-16 text-white mb-2" /> )}
+
+                            {verificationResult.message && ( <p className="text-white font-semibold mb-1">{verificationResult.message}</p> )}
+
+                            {/* Score display */}
+                            {verificationResult.score !== undefined && !verificationResult.success && (
+                                <p className="text-white text-sm opacity-80"> (Score: {(verificationResult.score * 100).toFixed(1)}%) </p>
+                            )}
+
+                            {/* Retry Button on Failure */}
+                            {!verificationResult.success && (
+                                 <button type="button" onClick={handleRetake} className="mt-4 px-4 py-2 bg-white/20 ...">
+                                     <RotateCcw className="inline-block h-4 w-4 mr-1" /> Retry Scan
+                                 </button>
+                             )}
+                        </>
+                    )}
                  </div>
              )}
 
@@ -471,63 +552,27 @@ export default function FaceScanModal(props: FaceScanModalProps) {
             </button>
 
             {/* Bottom Action Buttons (Visible when models loaded/no critical error) */}
-            {modelsLoaded && !cameraError && !loadingModels && (
+            {/* Show only when models loaded, no fatal error, and no verification in progress/result shown (except for retry) */}
+            {modelsLoaded && !cameraError && !loadingModels && (!verifying && !verificationResult) && (
                  <div className="absolute bottom-0 left-0 right-0 flex justify-center items-center p-6 bg-gradient-to-t from-black/70 to-transparent z-30">
-                    {!capturedImage ? (
-                        // Mode: Camera Active - Show Capture Button (Register) or placeholder (Verify)
-                         mode === 'register' ? (
-                            <button
-                                type="button"
-                                onClick={handleTakePhoto}
-                                disabled={isCaptureDisabled} // Use derived state
-                                className={`p-4 rounded-full border-4 transition-all duration-300
-                                            ${isCaptureDisabled
-                                                ? 'bg-gray-400 border-gray-500 cursor-not-allowed'
-                                                : 'bg-white hover:bg-gray-200 border-gray-300 animate-pulse' // Pulse when ready
-                                            }`}
-                                aria-label="Take photo"
-                            >
-                                <Camera className={`h-8 w-8 ${isCaptureDisabled ? 'text-gray-600' : 'text-gray-800'}`} />
-                            </button>
-                         ) : (
-                             // Placeholder or specific button for Verify mode's live state if needed later
-                              <button type="button" onClick={handleTakePhoto} className="p-4 bg-white rounded-full ...">...</button> // Original Verify capture button
-                         )
-
-                    ) : (
-                        // Mode: Image Captured - Show Retake & Confirm/Verify Buttons
-                        <div className="flex justify-center items-center space-x-12 w-full">
-                             {/* Retake Button (Show unless verification succeeded in verify mode) */}
-                            {!(mode === 'verify' && verificationResult?.success) && (
-                                <button
-                                    type="button"
-                                    onClick={handleRetake}
-                                    disabled={verifying} // Disable during verification process
-                                    className="p-3 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors disabled:opacity-50"
-                                    aria-label="Retake photo"
-                                >
-                                    <RotateCcw className="h-8 w-8" />
-                                </button>
-                            )}
-
-                            {/* Confirm (Register) or Verify Button */}
-                            {/* Show if no verification result yet, OR if verification failed */}
-                            {(!verificationResult || (mode === 'verify' && !verificationResult.success)) && (
-                                <button
-                                    type="button"
-                                    onClick={handleConfirmOrVerify}
-                                    disabled={verifying || (mode === 'verify' && !props.referenceImage)} // Disable verify if no ref image
-                                    className={`p-3 rounded-full text-white transition-colors disabled:opacity-50
-                                                ${mode === 'register' ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'}`}
-                                    aria-label={mode === 'register' ? 'Save photo' : 'Verify identity'}
-                                >
-                                    {verifying ? ( <Loader2 className="h-8 w-8 animate-spin" /> )
-                                    : mode === 'register' ? ( <CheckCircle className="h-8 w-8" /> )
-                                    : ( <ScanFace className="h-8 w-8" /> )}
-                                </button>
-                            )}
-                        </div>
+                    {mode === 'register' && !capturedImageState && ( // Register mode, before capture
+                        <button
+                            type="button"
+                            onClick={() => cameraRef.current?.captureImage()} // Direct capture trigger
+                            disabled={isRegisterCaptureDisabled}
+                            className={`p-4 rounded-full border-4 transition-all duration-300 ... ${isRegisterCaptureDisabled ? '...' : '... animate-pulse'}`}
+                            aria-label="Take photo"
+                        >
+                            <Camera className={`h-8 w-8 ${isRegisterCaptureDisabled ? '...' : '...'}`} />
+                        </button>
                     )}
+                     {mode === 'register' && capturedImageState && ( // Register mode, after capture
+                         <div className="flex justify-center items-center space-x-12 w-full">
+                            <button type="button" onClick={handleRetake} className="p-3 bg-white/20 ..."><RotateCcw/></button>
+                            <button type="button" onClick={handleRegisterConfirm} className="p-3 bg-green-500 ..."><CheckCircle/></button>
+                         </div>
+                     )}
+                     {/* No explicit button needed for verify mode's initial state - it's automatic */}
                  </div>
              )}
 
