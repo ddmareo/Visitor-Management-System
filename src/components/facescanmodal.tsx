@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Camera, RotateCcw, CheckCircle, XCircle, Loader2, ScanFace, CameraOff } from 'lucide-react';
 import CameraObject, { CameraRef } from './camera'; // Assuming camera.tsx is in the same folder or adjust path
-import { loadFaceApiModels, compareFaces, detectFaces } from '@/utils/faceverif'; // Assuming path
+import { loadFaceApiModels, compareFaces, detectFaces, processFaceDetectionResults, AUTO_CAPTURE_DELAY, DETECTION_INTERVAL, FACE_CENTER_THRESHOLD_X, FACE_CENTER_THRESHOLD_Y } from '@/utils/faceverif'; // Assuming path
 import { cropImageToAspectRatio } from '@/utils/cropfacescan';
 import * as faceapi from 'face-api.js'; // Import face-api.js for face detection
 
@@ -38,10 +38,6 @@ export type FaceScanModalProps = RegisterProps | VerifyProps;
 
 // Define acceptable center region (percentages of video width/height)
 const TARGET_ASPECT_RATIO = 3 / 4; // Define target ratio
-const FACE_CENTER_THRESHOLD_X = 0.3; // Allows center point within central 40% (1 - 2*0.3)
-const FACE_CENTER_THRESHOLD_Y = 0.4; // Allows center point within central 50% (1 - 2*0.25)
-const DETECTION_INTERVAL = 150; // ms between detections (adjust for performance)
-const AUTO_CAPTURE_DELAY = 3000; // ms - How long face must be valid before auto-capture
 
 export default function FaceScanModal(props: FaceScanModalProps) {
   const { onClose, mode } = props; // Common props
@@ -186,42 +182,24 @@ export default function FaceScanModal(props: FaceScanModalProps) {
 
         try {
             const detectionOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 });
-            const detections = await detectFaces(videoElement, detectionOptions); // Detect faces in the video stream
+
+            const detections = await detectFaces(videoElement, detectionOptions);
             const videoWidth = videoElement.videoWidth;
             const videoHeight = videoElement.videoHeight;
 
-            let currentStatus: ValidationStatus = 'idle';
-            let currentMessage: string | null = null;
-
-            if (detections.length === 0) {
-            currentStatus = 'no_face';
-            currentMessage = 'No face detected.';
-            } else if (detections.length > 1) {
-            currentStatus = 'multiple_faces';
-            currentMessage = 'Multiple faces detected.';
-            } else {
-            const box = detections[0].detection.box;
-            const faceCenterX = box.x + box.width / 2;
-            const faceCenterY = box.y + box.height / 2;
-
-            const isCenteredX = faceCenterX > videoWidth * FACE_CENTER_THRESHOLD_X && faceCenterX < videoWidth * (1 - FACE_CENTER_THRESHOLD_X);
-            const isCenteredY = faceCenterY > videoHeight * FACE_CENTER_THRESHOLD_Y && faceCenterY < videoHeight * (1 - FACE_CENTER_THRESHOLD_Y);
-
-            if (isCenteredX && isCenteredY) {
-                currentStatus = 'valid';
-                currentMessage = mode === 'register' ? 'Ready to capture!' : 'Hold still...'; // Different message for verify
-            } else {
-                currentStatus = 'off_center';
-                currentMessage = 'Please center face.';
-            }
-            }
+            const validationResult = processFaceDetectionResults(
+                detections, 
+                videoWidth, 
+                videoHeight, 
+                mode
+              );
 
             // Update state for UI feedback
-            setValidationStatus(currentStatus);
-            setValidationMessage(currentMessage);
+            setValidationStatus(validationResult.status);
+            setValidationMessage(validationResult.message);
 
             // --- Auto-Capture Logic (Verify Mode Only) ---
-            if (mode === 'verify' && currentStatus === 'valid') {
+            if (mode === 'verify' && validationResult.status === 'valid') {
             if (validStartTimeRef.current === null) {
                 // Start timer
                 validStartTimeRef.current = Date.now();
@@ -479,8 +457,8 @@ export default function FaceScanModal(props: FaceScanModalProps) {
                              `}
                               // Adjust size based on thresholds
                               style={{
-                                width: `${(1 - 2 * FACE_CENTER_THRESHOLD_X) * 100}%`,
-                                height: `${(1 - 2 * FACE_CENTER_THRESHOLD_Y) * 100}%`,
+                                width: `${(1 - 2 * FACE_CENTER_THRESHOLD_X) * 500}%`,
+                                height: `${(1 - 2 * FACE_CENTER_THRESHOLD_Y) * 300}%`,
                                 maxWidth: '70%', // prevent guide from being too large
                                 maxHeight: '70%',
                               }}
@@ -489,7 +467,7 @@ export default function FaceScanModal(props: FaceScanModalProps) {
 
                     {/* Validation Status Text */}
                     {validationMessage && (
-                        <div className={`absolute bottom-28 left-0 right-0 text-center p-2 transition-opacity duration-300
+                        <div className={`absolute top-16 left-0 right-0 text-center p-2 transition-opacity duration-300
                             ${validationStatus === 'error' ? 'text-red-400 font-semibold' : 'text-white/90'}
                             ${validationStatus === 'valid' ? (mode === 'register' ? 'text-green-400 font-bold' : 'text-blue-300 font-semibold') : ''}
                              `} >
@@ -504,8 +482,8 @@ export default function FaceScanModal(props: FaceScanModalProps) {
                  // This overlay uses z-30, so it appears *above* the z-20 guide when active
                  <div className={`absolute inset-0 z-30 flex flex-col items-center justify-center p-4 text-center transition-opacity duration-300
                     ${verifying ? 'bg-black/60 backdrop-blur-sm' : ''}
-                    ${verificationResult && !verificationResult.success ? 'bg-red-600/90' : ''}
-                    ${verificationResult && verificationResult.success ? 'bg-green-600/90' : ''} `}>
+                    ${verificationResult && !verificationResult.success ? 'bg-red-600/50' : ''}
+                    ${verificationResult && verificationResult.success ? 'bg-green-600/50' : ''} `}>
 
                     {/* Spinner when verifying */}
                     {verifying && !verificationResult && (

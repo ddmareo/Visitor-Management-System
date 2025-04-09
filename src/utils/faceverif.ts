@@ -1,6 +1,12 @@
 // utils/faceapi.ts
 import * as faceapi from 'face-api.js';
 
+// Constants for face detection/validation that could be moved to utils
+export const FACE_CENTER_THRESHOLD_X = 0.45; // Allows center point within central 40% (1 - 2*0.3)
+export const FACE_CENTER_THRESHOLD_Y = 0.4; // Allows center point within central 50% (1 - 2*0.25)
+export const DETECTION_INTERVAL = 150; // ms between detections (adjust for performance)
+export const AUTO_CAPTURE_DELAY = 2000; // ms - How long face must be valid before auto-capture
+
 // Initialize face-api models
 export async function loadFaceApiModels() {
   try {
@@ -131,5 +137,77 @@ export async function detectFaces(
   } catch (error) {
       console.error('Error during face detection:', error);
       return []; // Return empty array on error
+  }
+}
+
+// Function to validate face position in frame
+export function validateFacePosition(
+  detection: faceapi.WithFaceDetection<{}>, 
+  videoWidth: number, 
+  videoHeight: number
+): { 
+  isValid: boolean;
+  status: 'valid' | 'off_center';
+  message: string;
+} {
+  const box = detection.detection.box;
+  const faceCenterX = box.x + box.width / 2;
+  const faceCenterY = box.y + box.height / 2;
+
+  const isCenteredX = faceCenterX > videoWidth * FACE_CENTER_THRESHOLD_X && 
+                     faceCenterX < videoWidth * (1 - FACE_CENTER_THRESHOLD_X);
+  const isCenteredY = faceCenterY > videoHeight * FACE_CENTER_THRESHOLD_Y && 
+                     faceCenterY < videoHeight * (1 - FACE_CENTER_THRESHOLD_Y);
+
+  if (isCenteredX && isCenteredY) {
+    return {
+      isValid: true,
+      status: 'valid',
+      message: 'Face positioned correctly'
+    };
+  } else {
+    return {
+      isValid: false,
+      status: 'off_center',
+      message: 'Please center face'
+    };
+  }
+}
+
+// Process detection results and get validation status
+export function processFaceDetectionResults(
+  detections: faceapi.WithFaceDetection<{}>[], 
+  videoWidth: number, 
+  videoHeight: number,
+  mode: 'register' | 'verify'
+): {
+  status: 'no_face' | 'multiple_faces' | 'valid' | 'off_center';
+  message: string;
+  isValid: boolean;
+} {
+  if (detections.length === 0) {
+    return {
+      status: 'no_face',
+      message: 'No face detected.',
+      isValid: false
+    };
+  } else if (detections.length > 1) {
+    return {
+      status: 'multiple_faces',
+      message: 'Multiple faces detected.',
+      isValid: false
+    };
+  } else {
+    // Single face detected, validate position
+    const positionResult = validateFacePosition(detections[0], videoWidth, videoHeight);
+    
+    return {
+      status: positionResult.status,
+      // Customize message based on mode
+      message: positionResult.status === 'valid' 
+        ? (mode === 'register' ? 'Ready to capture!' : 'Hold still...') 
+        : positionResult.message,
+      isValid: positionResult.isValid
+    };
   }
 }
