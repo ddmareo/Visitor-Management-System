@@ -1,5 +1,5 @@
 // camera.tsx
-import React, { useRef, forwardRef, useImperativeHandle, useEffect, useState } from 'react';
+import React, { useRef, forwardRef, useImperativeHandle, useEffect, useState, useCallback } from 'react';
 import { AlertCircle } from 'lucide-react';
 
 export interface CameraProps {
@@ -17,7 +17,7 @@ const CameraObject = forwardRef<CameraRef, CameraProps>(({ onCapture, onStreamRe
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const setupCamera = useCallback(async () => {
     let stream: MediaStream | null = null;
 
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -37,39 +37,52 @@ const CameraObject = forwardRef<CameraRef, CameraProps>(({ onCapture, onStreamRe
       video: true
     };
 
-    navigator.mediaDevices.getUserMedia(hdConstraints)
-      .catch(() => navigator.mediaDevices.getUserMedia(basicConstraints))
-      .then(videoStream => {
-        if (!videoRef.current) return;
-        
-        stream = videoStream;
-        videoRef.current.srcObject = stream;
-        
-        videoRef.current.onerror = () => {
-          setError('Video playback error occurred');
-        };
+    try {
+      // Try HD constraints first, fall back to basic
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(hdConstraints);
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia(basicConstraints);
+      }
 
-        onStreamReady(stream);
-      })
-      .catch(err => {
-        console.error('Camera error:', err);
-        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          setError('Camera access denied. Please allow camera access and refresh.');
-        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-          setError('No camera found. Please connect a camera and refresh.');
-        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-          setError('Camera is in use by another application.');
-        } else {
-          setError('Could not start camera.');
-        }
-      });
+      if (!videoRef.current) return;
+      
+      videoRef.current.srcObject = stream;
+      
+      videoRef.current.onerror = () => {
+        setError('Video playback error occurred');
+      };
+
+      onStreamReady(stream);
+    } catch (err: any) {
+      console.error('Camera error:', err);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setError('Camera access denied. Please allow camera access and refresh.');
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        setError('No camera found. Please connect a camera and refresh.');
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        setError('Camera is in use by another application.');
+      } else {
+        setError('Could not start camera.');
+      }
+    }
+  }, [onStreamReady]); // Include onStreamReady in dependencies
+
+  useEffect(() => {
+    let mediaStream: MediaStream | null = null;
+    
+    setupCamera().then(() => {
+      if (videoRef.current) {
+        mediaStream = videoRef.current.srcObject as MediaStream;
+      }
+    });
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, [setupCamera]); // Now only depends on setupCamera which memoizes onStreamReady
 
   const captureImage = () => {
     if (!videoRef.current || !canvasRef.current) return;

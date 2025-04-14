@@ -40,7 +40,7 @@ export function base64ToImage(base64Data: string): Promise<HTMLImageElement> {
 // Correctly typed function for face detection
 export async function getFaceDescriptor(
   imageData: string
-): Promise<faceapi.WithFaceDescriptor<faceapi.WithFaceLandmarks<faceapi.WithFaceDetection<{}>>>[] | null> {
+): Promise<faceapi.WithFaceDescriptor<faceapi.WithFaceLandmarks<faceapi.WithFaceDetection<object>>>[] | null> {
   try {
     const img = await base64ToImage(imageData);
     
@@ -126,7 +126,7 @@ export async function compareFaces(
 export async function detectFaces(
   input: HTMLVideoElement | HTMLImageElement,
   options: faceapi.SsdMobilenetv1Options | faceapi.TinyFaceDetectorOptions | undefined = undefined
-): Promise<faceapi.WithFaceDetection<{}>[]> {
+): Promise<faceapi.WithFaceDetection<object>[]> {
   // Use SSD MobileNetV1 by default as it's generally a good balance
   const detectorOptions = options || new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 });
 
@@ -142,7 +142,7 @@ export async function detectFaces(
 
 // Function to validate face position in frame
 export function validateFacePosition(
-  detection: faceapi.WithFaceDetection<{}>, 
+  detection: faceapi.WithFaceDetection<object>, 
   videoWidth: number, 
   videoHeight: number
 ): { 
@@ -176,7 +176,7 @@ export function validateFacePosition(
 
 // Process detection results and get validation status
 export function processFaceDetectionResults(
-  detections: faceapi.WithFaceDetection<{}>[], 
+  detections: faceapi.WithFaceDetection<object>[], 
   videoWidth: number, 
   videoHeight: number,
   mode: 'register' | 'verify'

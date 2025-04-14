@@ -5,7 +5,6 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Camera, X } from "lucide-react";
 import { encrypt, decrypt } from "@/utils/encryption";
-import CameraRegister from "@/components/cameraregister";
 import FaceScanModal from "@/components/facescanmodal";
 
 interface Company {

@@ -1,6 +1,6 @@
 // FaceScanModal.tsx
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Camera, RotateCcw, CheckCircle, XCircle, Loader2, ScanFace, CameraOff } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { X, Camera, RotateCcw, CheckCircle, XCircle, Loader2, CameraOff } from 'lucide-react';
 import CameraObject, { CameraRef } from './camera'; // Assuming camera.tsx is in the same folder or adjust path
 import { loadFaceApiModels, compareFaces, detectFaces, processFaceDetectionResults, AUTO_CAPTURE_DELAY, DETECTION_INTERVAL, FACE_CENTER_THRESHOLD_X, FACE_CENTER_THRESHOLD_Y } from '@/utils/faceverif'; // Assuming path
 import { cropImageToAspectRatio } from '@/utils/cropfacescan';
@@ -62,6 +62,72 @@ export default function FaceScanModal(props: FaceScanModalProps) {
   const [verifying, setVerifying] = useState(false); // Tracks the compareFaces API call
   const [verificationResult, setVerificationResult] = useState<{ success: boolean; score?: number; message?: string } | null>(null);
   const verificationInProgressRef = useRef(false); // Flag to prevent re-triggering auto-capture while one is processing
+
+    // --- Detection Loop Function ---
+    const startDetectionLoop = useCallback((videoElement: HTMLVideoElement) => {
+        if (detectionIntervalRef.current) clearInterval(detectionIntervalRef.current);
+        isDetectingRef.current = false;
+        validStartTimeRef.current = null; // Reset timer when loop starts/restarts
+
+        detectionIntervalRef.current = setInterval(async () => {
+        if (!cameraRef.current?.videoElement || videoElement.paused || videoElement.ended || !modelsLoaded || isDetectingRef.current || verificationInProgressRef.current) {
+            return; // Skip if busy, paused, ended, models unloaded, or verification running
+        }
+
+        if (videoElement.readyState < videoElement.HAVE_CURRENT_DATA) return; // Skip if not enough data
+
+        isDetectingRef.current = true;
+
+        try {
+            const detectionOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 });
+
+            const detections = await detectFaces(videoElement, detectionOptions);
+            const videoWidth = videoElement.videoWidth;
+            const videoHeight = videoElement.videoHeight;
+
+            const validationResult = processFaceDetectionResults(
+                detections, 
+                videoWidth, 
+                videoHeight, 
+                mode
+            );
+
+            // Update state for UI feedback
+            setValidationStatus(validationResult.status);
+            setValidationMessage(validationResult.message);
+
+            // --- Auto-Capture Logic (Verify Mode Only) ---
+            if (mode === 'verify' && validationResult.status === 'valid') {
+            if (validStartTimeRef.current === null) {
+                // Start timer
+                validStartTimeRef.current = Date.now();
+            } else {
+                // Timer running, check if delay exceeded
+                if (Date.now() - validStartTimeRef.current >= AUTO_CAPTURE_DELAY) {
+                // Threshold met, trigger capture and verification
+                console.log("Auto-capture threshold met.");
+                validStartTimeRef.current = null; // Reset timer immediately
+                if (!verificationInProgressRef.current) { // Double check flag
+                    cameraRef.current?.captureImage(); // Trigger capture
+                    // handleCapture will now initiate the verification flow
+                }
+                }
+            }
+            } else {
+            // Status is not 'valid', reset timer
+            validStartTimeRef.current = null;
+            }
+
+        } catch (error) {
+            console.error('Error during face detection loop:', error);
+            setValidationStatus('error');
+            setValidationMessage('Detection error occurred.');
+            validStartTimeRef.current = null; // Reset timer on error
+        } finally {
+            isDetectingRef.current = false;
+        }
+        }, DETECTION_INTERVAL);
+    }, [mode, modelsLoaded, cameraRef, setValidationStatus, setValidationMessage]);
   // --- Effects ---
 
   // Effect 1: Load Models (Runs once or if mode changes)
@@ -108,137 +174,69 @@ export default function FaceScanModal(props: FaceScanModalProps) {
         };
     }, [stream]); // Depend only on stream
 
+    // In the useEffect section, add startDetectionLoop to the dependency array
     useEffect(() => {
         const cleanupDetection = () => {
-          if (detectionIntervalRef.current) {
+        if (detectionIntervalRef.current) {
             clearInterval(detectionIntervalRef.current);
             detectionIntervalRef.current = null;
-          }
-          isDetectingRef.current = false;
-          validStartTimeRef.current = null; // Reset timer on cleanup
+        }
+        isDetectingRef.current = false;
+        validStartTimeRef.current = null; // Reset timer on cleanup
         };
-    
+
         // Run loop if models loaded, stream ready, and video element exists
         // Also check for cameraError
         if (modelsLoaded && stream && cameraRef.current?.videoElement && !cameraError && !loadingModels) {
-          const videoElement = cameraRef.current.videoElement;
-    
-           // Check if verification is already completed (success/fail) - if so, don't restart loop unless retried
-           if (mode === 'verify' && verificationResult) {
-               cleanupDetection();
-               return;
-           }
-    
-    
-          const checkVideoAndStart = () => {
-              if (videoElement.readyState >= videoElement.HAVE_METADATA) {
+        const videoElement = cameraRef.current.videoElement;
+
+        // Check if verification is already completed (success/fail) - if so, don't restart loop unless retried
+        if (mode === 'verify' && verificationResult) {
+            cleanupDetection();
+            return;
+        }
+
+
+        const checkVideoAndStart = () => {
+            if (videoElement.readyState >= videoElement.HAVE_METADATA) {
                 startDetectionLoop(videoElement);
-              } else {
-                 setValidationMessage("Waiting for video...");
-                 videoElement.addEventListener('loadedmetadata', startDetectionLoop.bind(null, videoElement), { once: true });
-              }
-          };
-    
-          // Ensure verification reference image exists for verify mode before starting loop
-          if (mode === 'verify') {
-              const verifyProps = props as VerifyProps; // Type assertion
-              if (!verifyProps.referenceImage) {
-                  setValidationStatus('error');
-                  setValidationMessage('Reference image missing for verification.');
-                  cleanupDetection();
-                  return; // Don't start loop if reference is missing
-              }
-          }
-    
-    
-          checkVideoAndStart();
-    
+            } else {
+                setValidationMessage("Waiting for video...");
+                videoElement.addEventListener('loadedmetadata', () => startDetectionLoop(videoElement), { once: true });
+            }
+        };
+
+        // Ensure verification reference image exists for verify mode before starting loop
+        if (mode === 'verify') {
+            const verifyProps = props as VerifyProps; // Type assertion
+            if (!verifyProps.referenceImage) {
+                setValidationStatus('error');
+                setValidationMessage('Reference image missing for verification.');
+                cleanupDetection();
+                return; // Don't start loop if reference is missing
+            }
+        }
+
+        checkVideoAndStart();
+
         } else {
-          cleanupDetection(); // Conditions not met, ensure loop is stopped
-           if (!modelsLoaded && !loadingModels) { setValidationMessage("Models failed to load."); setValidationStatus('error'); }
-           else if (!stream && !loadingModels) { setValidationMessage("Initializing camera..."); setValidationStatus('idle'); }
-           else if (cameraError) { setValidationMessage(cameraError); setValidationStatus('error');}
+        cleanupDetection(); // Conditions not met, ensure loop is stopped
+        if (!modelsLoaded && !loadingModels) { setValidationMessage("Models failed to load."); setValidationStatus('error'); }
+        else if (!stream && !loadingModels) { setValidationMessage("Initializing camera..."); setValidationStatus('idle'); }
+        else if (cameraError) { setValidationMessage(cameraError); setValidationStatus('error');}
         }
-    
+
         return cleanupDetection; // Cleanup on unmount or dependency change
-    
-       }, [mode, modelsLoaded, loadingModels, stream, cameraRef.current?.videoElement, cameraError, verificationResult, props]); // Add verificationResult and props
-    
+    }, [mode, modelsLoaded, loadingModels, stream, cameraRef, cameraError, verificationResult, props, startDetectionLoop]); // Added startDetectionLoop here
 
-    // --- Detection Loop Function ---
-    const startDetectionLoop = (videoElement: HTMLVideoElement) => {
-        if (detectionIntervalRef.current) clearInterval(detectionIntervalRef.current);
-        isDetectingRef.current = false;
-        validStartTimeRef.current = null; // Reset timer when loop starts/restarts
+    // --- Handlers ---
 
-        detectionIntervalRef.current = setInterval(async () => {
-        if (!cameraRef.current?.videoElement || videoElement.paused || videoElement.ended || !modelsLoaded || isDetectingRef.current || verificationInProgressRef.current) {
-            return; // Skip if busy, paused, ended, models unloaded, or verification running
-        }
-
-        if (videoElement.readyState < videoElement.HAVE_CURRENT_DATA) return; // Skip if not enough data
-
-        isDetectingRef.current = true;
-
-        try {
-            const detectionOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 });
-
-            const detections = await detectFaces(videoElement, detectionOptions);
-            const videoWidth = videoElement.videoWidth;
-            const videoHeight = videoElement.videoHeight;
-
-            const validationResult = processFaceDetectionResults(
-                detections, 
-                videoWidth, 
-                videoHeight, 
-                mode
-              );
-
-            // Update state for UI feedback
-            setValidationStatus(validationResult.status);
-            setValidationMessage(validationResult.message);
-
-            // --- Auto-Capture Logic (Verify Mode Only) ---
-            if (mode === 'verify' && validationResult.status === 'valid') {
-            if (validStartTimeRef.current === null) {
-                // Start timer
-                validStartTimeRef.current = Date.now();
-            } else {
-                // Timer running, check if delay exceeded
-                if (Date.now() - validStartTimeRef.current >= AUTO_CAPTURE_DELAY) {
-                // Threshold met, trigger capture and verification
-                console.log("Auto-capture threshold met.");
-                validStartTimeRef.current = null; // Reset timer immediately
-                if (!verificationInProgressRef.current) { // Double check flag
-                    cameraRef.current?.captureImage(); // Trigger capture
-                    // handleCapture will now initiate the verification flow
-                }
-                }
-            }
-            } else {
-            // Status is not 'valid', reset timer
-            validStartTimeRef.current = null;
-            }
-
-        } catch (error) {
-            console.error('Error during face detection loop:', error);
-            setValidationStatus('error');
-            setValidationMessage('Detection error occurred.');
-            validStartTimeRef.current = null; // Reset timer on error
-        } finally {
-            isDetectingRef.current = false;
-        }
-        }, DETECTION_INTERVAL);
-    };
-
-  // --- Handlers ---
-
-    const handleStreamReady = (mediaStream: MediaStream) => {
+    const handleStreamReady = useCallback((mediaStream: MediaStream) => {
         setStream(mediaStream);
         setCameraError(null);
-        setValidationStatus('detecting'); // Indicate detection will start
+        setValidationStatus('detecting');
         setValidationMessage('Detecting face...');
-    };
+    }, [setStream, setCameraError, setValidationStatus, setValidationMessage]);
   
     // Modified Capture Handler
     const handleCapture = async (rawImageData: string) => {
