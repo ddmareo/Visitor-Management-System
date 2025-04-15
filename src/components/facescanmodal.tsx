@@ -379,10 +379,11 @@ export default function FaceScanModal(props: FaceScanModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-transparent p-4 w-full max-w-xl mx-4">
-        <div className="relative w-full">
+      <div className="bg-transparent p-4 w-full h-full max-w-xl mx-4">
+        <div className="relative w-full h-full max-h-full flex items-center justify-center">
           {/* Aspect Ratio Container */}
-          <div className="aspect-[3/4] bg-gray-900 rounded-lg overflow-hidden relative shadow-lg">
+          <div className="aspect-[3/4] bg-gray-900 rounded-lg overflow-hidden relative shadow-lg  w-full h-auto max-h-[95vh] max-w-md
+                      md:max-h-[90vh] md:w-auto md:h-[90vh]">
 
             {/* 1. Loading/Error Overlays (Highest Priority) */}
             {loadingModels && (
