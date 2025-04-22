@@ -171,7 +171,8 @@ export async function GET(request: Request) {
           CAST(COUNT(*) AS INTEGER) as visits
         FROM visit
         WHERE EXTRACT(YEAR FROM entry_start_date) = ${year}
-        GROUP BY EXTRACT(MONTH FROM entry_start_date), TO_CHAR(entry_start_date, 'Mon')
+        GROUP BY EXTRACT(MONTH FROM entry_start_date),
+        TO_CHAR(entry_start_date, 'Mon')
         ORDER BY EXTRACT(MONTH FROM entry_start_date)
       `;
 
@@ -196,7 +197,7 @@ export async function GET(request: Request) {
           COUNT(*) as visits
         FROM visit v
         JOIN employee e ON v.employee_id = e.employee_id
-        WHERE YEAR(v.entry_start_date) = ${year}
+        WHERE EXTRACT(YEAR FROM v.entry_start_date) = ${year}
         AND e.department IS NOT NULL
         GROUP BY e.department
         ORDER BY visits DESC
