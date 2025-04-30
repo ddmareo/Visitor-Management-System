@@ -7,6 +7,8 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  Legend, // Import Legend
+  CartesianGrid, // Import CartesianGrid for better readability
   Bar,
   Line,
   ResponsiveContainer,
@@ -18,6 +20,7 @@ import {
   TrendingUp,
   Building2,
   Building,
+  BrainCircuit, ArrowUp, ArrowDown, Minus,
 } from "lucide-react";
 
 type VisitData = {
@@ -47,6 +50,36 @@ type Stats = {
   peak_visits: number;
 };
 
+// Prediction Data Structure
+type WeeklyPredictionPoint = {
+  time: Date | string; // Store as Date object initially
+  historicalValue: number | null;
+  predictedValue: number | null;
+};
+
+type CategoryTrend = {
+  name: string;
+  predictedValue: number;
+  trend: 'up' | 'down' | 'stable';
+};
+
+type FullPredictionData = {
+  weeklyPrediction: {
+      data: WeeklyPredictionPoint[];
+      message?: string;
+  };
+  departmentTrends: CategoryTrend[];
+  companyTrends: CategoryTrend[];
+  error?: string; // General error fetching predictions
+};
+
+// Chart Data Point (formatted)
+type WeeklyChartDataPoint = {
+  weekLabel: string; // Formatted string for XAxis
+  historicalValue: number | null;
+  predictedValue: number | null;
+};
+
 const VisitorDashboard = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("monthly");
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -67,6 +100,11 @@ const VisitorDashboard = () => {
   });
 
   const [isLoading, setIsLoading] = useState(true);
+
+  // --- Prediction State ---
+  const [predictionData, setPredictionData] = useState<FullPredictionData | null>(null);
+  const [isPredictionLoading, setIsPredictionLoading] = useState(true);
+  const [weeklyChartData, setWeeklyChartData] = useState<WeeklyChartDataPoint[]>([]);
 
   const formatXAxis = (tickItem: string) => {
     return tickItem;
@@ -93,6 +131,22 @@ const VisitorDashboard = () => {
         ))}
       </text>
     );
+  };
+
+  // Format week start date for chart label (e.g., "Wk of Jan 15")
+  const formatWeekLabel = (date: Date | string): string => {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return `Week of ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  }
+
+  // Get Trend Icon Component
+  const TrendIcon = ({ trend }: { trend: 'up' | 'down' | 'stable' }) => {
+  switch (trend) {
+      case 'up': return <ArrowUp className="w-4 h-4 text-green-500" />;
+      case 'down': return <ArrowDown className="w-4 h-4 text-red-500" />;
+      case 'stable': return <Minus className="w-4 h-4 text-gray-500" />;
+      default: return null;
+  }
   };
 
   useEffect(() => {
@@ -169,6 +223,55 @@ const VisitorDashboard = () => {
 
     fetchData();
   }, [selectedPeriod, selectedDate]);
+
+  // --- Fetch Prediction Data ---
+  useEffect(() => {
+    const fetchPredictionData = async () => {
+      setIsPredictionLoading(true);
+      setWeeklyChartData([]); // Clear previous chart data on refetch/load
+      setPredictionData(null); // Clear previous full prediction data
+
+      try {
+        const response = await fetch('/api/visits/prediction');
+        const data: FullPredictionData = await response.json();
+
+        if (response.ok) {
+            // Process dates and prepare chart data
+            const processedWeeklyData = data.weeklyPrediction.data.map(p => ({
+                ...p,
+                time: new Date(p.time) // Ensure Date object
+            }));
+
+            const chartData = processedWeeklyData.map(p => ({
+                weekLabel: formatWeekLabel(p.time),
+                historicalValue: p.historicalValue,
+                predictedValue: p.predictedValue
+            }));
+
+            setWeeklyChartData(chartData);
+            setPredictionData({ // Store the full processed data
+                weeklyPrediction: {
+                    data: processedWeeklyData,
+                    message: data.weeklyPrediction.message
+                },
+                departmentTrends: data.departmentTrends,
+                companyTrends: data.companyTrends
+            });
+
+        } else {
+          console.error("Failed to fetch prediction data:", data);
+          setPredictionData({ weeklyPrediction: { data: [], message: "Error fetching prediction." }, departmentTrends: [], companyTrends: [], error: data.error || "Unknown error" });
+        }
+      } catch (error: any) {
+        console.error("Error fetching prediction data:", error);
+        setPredictionData({ weeklyPrediction: { data: [], message: "Error fetching prediction." }, departmentTrends: [], companyTrends: [], error: error.message });
+      } finally {
+        setIsPredictionLoading(false);
+      }
+    };
+
+    fetchPredictionData();
+  }, []); // Runs once on mount
 
   const periods = [
     { id: "monthly", label: "Monthly" },
@@ -296,6 +399,103 @@ const VisitorDashboard = () => {
           </div>
         </div>
 
+         {/* --- Enhanced Prediction Section --- */}
+         <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg mb-8">
+          <div className="flex items-center mb-4">
+            <BrainCircuit className="w-5 h-5 text-gray-700 dark:text-gray-300 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Future Trends & Predictions (Next 6 Months)
+            </h2>
+          </div>
+
+          {/* Loading/Error State for the whole prediction section */}
+          {isPredictionLoading ? (
+              <div className="h-96 flex items-center justify-center">
+                <p className="text-gray-600 dark:text-gray-300">Loading predictions...</p>
+              </div>
+          ) : predictionData?.error ? (
+               <div className="h-auto p-4 text-center text-red-600 dark:text-red-400">
+                 <p>Could not load prediction data: {predictionData.error}</p>
+               </div>
+          ) : (
+            <>
+              {/* Weekly Prediction Chart */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">Weekly Visit Prediction</h3>
+                {predictionData?.weeklyPrediction.message && weeklyChartData.length === 0 && (
+                     <div className="h-80 flex items-center justify-center text-gray-600 dark:text-gray-300">
+                        <p>{predictionData.weeklyPrediction.message}</p>
+                    </div>
+                )}
+                {weeklyChartData.length > 0 && (
+                    <div className="h-80 mb-6"> {/* Chart container */}
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={weeklyChartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-20 dark:opacity-30" />
+                                {/* Adjust XAxis interval based on number of weeks if needed */}
+                                <XAxis dataKey="weekLabel" stroke="currentColor" className="text-xs text-gray-600 dark:text-gray-300" interval={'preserveStartEnd'} tick={{ fontSize: 10 }} />
+                                <YAxis stroke="currentColor" className="text-xs text-gray-600 dark:text-gray-300" tick={{ fontSize: 10 }}/>
+                                <Tooltip contentStyle={{ backgroundColor: "var(--tooltip-bg, #fff)", border: "1px solid var(--tooltip-border, #ccc)", borderRadius: "0.375rem", fontSize: '0.8rem', color: "var(--tooltip-text, #111827)" }}
+                                        formatter={(value: number, name: string) => value === null ? null : [value, name === 'historicalValue' ? 'Actual' : 'Predicted']}
+                                        labelFormatter={(label: string) => label} />
+                                <Legend verticalAlign="top" height={30} wrapperStyle={{ fontSize: '0.8rem' }}/>
+                                <Line type="monotone" dataKey="historicalValue" name="Actual" stroke="var(--color-historical, #4f46e5)" strokeWidth={1.5} dot={false} />
+                                <Line type="monotone" dataKey="predictedValue" name="Predicted" stroke="var(--color-predicted, #f97316)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                )}
+                 {predictionData?.weeklyPrediction.message && weeklyChartData.length > 0 && (
+                    <p className="text-xs text-center text-gray-500 dark:text-gray-400 -mt-4 mb-4">{predictionData.weeklyPrediction.message}</p>
+                )}
+              </div>
+
+              {/* Department & Company Trend Lists */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                {/* Department Trends */}
+                <div>
+                  <h4 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Top Department Trends</h4>
+                  {predictionData?.departmentTrends && predictionData.departmentTrends.length > 0 ? (
+                    <ul className="space-y-2">
+                      {predictionData.departmentTrends.map((dept) => (
+                        <li key={dept.name} className="flex justify-between items-center text-sm bg-gray-100 dark:bg-gray-700 p-2 rounded">
+                          <span className="font-medium text-gray-800 dark:text-gray-200 truncate pr-2">{dept.name}</span>
+                          <span className="flex items-center space-x-1 text-gray-600 dark:text-gray-400">
+                            <TrendIcon trend={dept.trend} />
+                            <span>~{dept.predictedValue.toLocaleString()} visits</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No department trend data available.</p>
+                  )}
+                </div>
+
+                {/* Company Trends */}
+                <div>
+                  <h4 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Top Company Trends</h4>
+                   {predictionData?.companyTrends && predictionData.companyTrends.length > 0 ? (
+                    <ul className="space-y-2">
+                      {predictionData.companyTrends.map((comp) => (
+                        <li key={comp.name} className="flex justify-between items-center text-sm bg-gray-100 dark:bg-gray-700 p-2 rounded">
+                          <span className="font-medium text-gray-800 dark:text-gray-200 truncate pr-2">{comp.name}</span>
+                           <span className="flex items-center space-x-1 text-gray-600 dark:text-gray-400">
+                            <TrendIcon trend={comp.trend} />
+                            <span>~{comp.predictedValue.toLocaleString()} visits</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No company trend data available.</p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+        
         <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg mb-8">
           <div className="flex items-center mb-4">
             <Building2 className="w-5 h-5 text-gray-700 dark:text-gray-300 mr-2" />
