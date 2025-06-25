@@ -12,6 +12,7 @@ import {
   Trash2,
   File,
   QrCode,
+  ScanFace,
 } from "lucide-react";
 import axios from "axios";
 import AddForm from "./addform";
@@ -278,6 +279,43 @@ const Table = () => {
     } catch (error) {
       console.error("Error fetching ID card:", error);
       alert("Failed to load ID Card image");
+    }
+  };
+
+  const openFaceScan = async (visitorId: string) => {
+    try {
+      const response = await axios.get(
+        `/api/table/visitorsdata/facescan/${visitorId}`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob([response.data], {
+        type: response.headers["content-type"],
+      });
+      const imageUrl = URL.createObjectURL(blob);
+
+      const newWindow = window.open("", "_blank");
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head>
+              <title>Face Scan</title>
+              <style>
+                body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f0f0; }
+                img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+              </style>
+            </head>
+            <body>
+              <img src="${imageUrl}" alt="Face Scan" />
+            </body>
+          </html>
+        `);
+      }
+    } catch (error) {
+      console.error("Error fetching face scan:", error);
+      alert("Failed to load face scan");
     }
   };
 
@@ -885,11 +923,19 @@ const Table = () => {
             <Edit className="w-5 h-5" />
           </a>
           {selectedTable === "visitorsdata" && (
-            <a
-              onClick={() => openIdCard(item.visitor_id)}
-              className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
-              <Eye className="w-5 h-5" />
-            </a>
+            <div className="flex flex-row space-x-4">
+              <a
+                onClick={() => openIdCard(item.visitor_id)}
+                className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
+                <Eye className="w-5 h-5" />
+              </a>
+              <a
+                onClick={() => openFaceScan(item.visitor_id)}
+                className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer">
+                <ScanFace className="w-5 h-5" />
+              </a>
+            </div>
+            
           )}
           {selectedTable === "visitsdata" && (
             <>

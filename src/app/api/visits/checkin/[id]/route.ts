@@ -61,7 +61,6 @@ export async function PUT(
       },
       data: {
         check_in_time: checkInTime,
-        verification_status: true,
         security: {
           connect: {
             security_id: userWithSecurity.security.security_id,

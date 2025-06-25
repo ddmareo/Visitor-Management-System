@@ -79,12 +79,12 @@ export async function GET(request: Request) {
     if (period === "monthly") {
       const [year, month] = date!.split("-").map(Number);
       const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0, 23, 59, 59);
+      const endDate = new Date(year, month, 0);
 
       const monthlyData = await prisma.$queryRaw`
         SELECT 
-          DATE_FORMAT(entry_start_date, '%Y-%m-%d') as day, 
-          COUNT(*) as visits
+          DATE(entry_start_date)::text as day, 
+          CAST(COUNT(*) AS INTEGER) as visits
         FROM visit
         WHERE entry_start_date >= ${startDate} 
         AND entry_start_date <= ${endDate}
@@ -97,20 +97,20 @@ export async function GET(request: Request) {
       statsData = await prisma.$queryRaw`
         SELECT
           (SELECT COUNT(*) FROM visit WHERE entry_start_date >= ${startDate} AND entry_start_date <= ${endDate}) AS total_visits,
-          ROUND(AVG(daily_visits)) as average_visits,
-          MAX(daily_visits) as peak_visits
+           CAST(ROUND(AVG(daily_visits)) AS INTEGER) as average_visits,
+           CAST(MAX(daily_visits) AS INTEGER) as peak_visits
         FROM (
           SELECT DATE(entry_start_date), COUNT(*) AS daily_visits
           FROM visit
           WHERE entry_start_date >= ${startDate} AND entry_start_date <= ${endDate}
           GROUP BY DATE(entry_start_date)
-        ) AS daily_visits
+        ) AS daily_visits;
       `;
 
       const monthlyDepartmentData = await prisma.$queryRaw`
         SELECT 
           e.department,
-          COUNT(*) as visits
+          CAST(COUNT(*) AS INTEGER) as visits
         FROM visit v
         JOIN employee e ON v.employee_id = e.employee_id
         WHERE v.entry_start_date >= ${startDate} 
@@ -125,7 +125,7 @@ export async function GET(request: Request) {
       const monthlyCompanyData = await prisma.$queryRaw`
         SELECT 
           c.company_name as company,
-          COUNT(*) as visits
+          CAST(COUNT(*) AS INTEGER) as visits
         FROM visit v
         JOIN visitor vi ON v.visitor_id = vi.visitor_id
         JOIN company c ON vi.company_id = c.company_id
@@ -167,27 +167,28 @@ export async function GET(request: Request) {
 
       const yearlyData = await prisma.$queryRaw`
         SELECT 
-          DATE_FORMAT(entry_start_date, '%b') as month,
-          COUNT(*) as visits
+          TO_CHAR(entry_start_date, 'Mon') as month,
+          CAST(COUNT(*) AS INTEGER) as visits
         FROM visit
-        WHERE YEAR(entry_start_date) = ${year}
-        GROUP BY MONTH(entry_start_date), DATE_FORMAT(entry_start_date, '%b')
-        ORDER BY MONTH(entry_start_date)
+        WHERE EXTRACT(YEAR FROM entry_start_date) = ${year}
+        GROUP BY EXTRACT(MONTH FROM entry_start_date),
+        TO_CHAR(entry_start_date, 'Mon')
+        ORDER BY EXTRACT(MONTH FROM entry_start_date)
       `;
 
       visitsData = transformData(yearlyData as any[]);
 
       statsData = await prisma.$queryRaw`
         SELECT
-          (SELECT COUNT(*) FROM visit WHERE YEAR(entry_start_date) = ${year}) AS total_visits,
-          ROUND(AVG(monthly_visits)) as average_visits,
-          MAX(monthly_visits) as peak_visits
+          (SELECT COUNT(*) FROM visit WHERE EXTRACT(YEAR FROM entry_start_date) = ${year}) AS total_visits,
+          CAST(ROUND(AVG(monthly_visits)) AS INTEGER) as average_visits,
+          CAST(MAX(monthly_visits) AS INTEGER) as peak_visits
         FROM (
-          SELECT MONTH(entry_start_date) AS month, COUNT(*) AS monthly_visits
+          SELECT EXTRACT(MONTH FROM entry_start_date) AS month, COUNT(*) AS monthly_visits
           FROM visit
-          WHERE YEAR(entry_start_date) = ${year}
-          GROUP BY MONTH(entry_start_date)
-        ) AS monthly_visits
+          WHERE EXTRACT(YEAR FROM entry_start_date) = ${year}
+          GROUP BY EXTRACT(MONTH FROM entry_start_date)
+        ) AS monthly_visits;
       `;
 
       const yearlyDepartmentData = await prisma.$queryRaw`
@@ -196,7 +197,7 @@ export async function GET(request: Request) {
           COUNT(*) as visits
         FROM visit v
         JOIN employee e ON v.employee_id = e.employee_id
-        WHERE YEAR(v.entry_start_date) = ${year}
+        WHERE EXTRACT(YEAR FROM v.entry_start_date) = ${year}
         AND e.department IS NOT NULL
         GROUP BY e.department
         ORDER BY visits DESC
@@ -207,11 +208,11 @@ export async function GET(request: Request) {
       const yearlyCompanyData = await prisma.$queryRaw`
         SELECT 
           c.company_name as company,
-          COUNT(*) as visits
+          CAST(COUNT(*) AS INTEGER) as visits
         FROM visit v
         JOIN visitor vi ON v.visitor_id = vi.visitor_id
         JOIN company c ON vi.company_id = c.company_id
-        WHERE YEAR(v.entry_start_date) = ${year}
+        WHERE EXTRACT(YEAR FROM v.entry_start_date) = ${year}
         GROUP BY c.company_name
         ORDER BY visits DESC
       `;
@@ -223,7 +224,7 @@ export async function GET(request: Request) {
           check_in_time
         FROM visit
         WHERE check_in_time IS NOT NULL
-        AND YEAR(entry_start_date) = ${year}
+        AND EXTRACT(YEAR FROM entry_start_date) = ${year}
       `;
 
       const processedTimeData = (timeData as any[]).reduce((acc: any, curr) => {

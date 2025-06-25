@@ -17,6 +17,7 @@ export async function POST(request: Request) {
     const phone = formData.get("phone") as string;
     const email = formData.get("email") as string | null;
     const address = formData.get("address") as string | null;
+    const faceScanFile = formData.get("faceScan") as File | null;
 
     if (!name || !company || !nomorktp || !phone) {
       return NextResponse.json(
@@ -26,6 +27,7 @@ export async function POST(request: Request) {
     }
 
     let encryptedImage: Buffer | null = null;
+    let encryptedFaceScan: Buffer | null = null;
 
     if (idCardFile) {
       const fileArrayBuffer = await idCardFile.arrayBuffer();
@@ -80,6 +82,13 @@ export async function POST(request: Request) {
       encryptedImage = encryptBinary(watermarkedImage);
     }
 
+    if (faceScanFile) {
+      const fileArrayBuffer = await faceScanFile.arrayBuffer();
+      const fileBuffer = Buffer.from(fileArrayBuffer);
+
+      encryptedFaceScan = encryptBinary(fileBuffer);
+    }
+
     const existingVisitor = await prisma.visitor.findUnique({
       where: { id_number: nomorktp },
     });
@@ -119,6 +128,7 @@ export async function POST(request: Request) {
         ...(email ? { contact_email: email } : {}),
         ...(address ? { address: address } : {}),
         ...(encryptedImage ? { id_card: encryptedImage } : {}),
+        ...(encryptedFaceScan ? { face_scan: encryptedFaceScan } : {}),
       },
     });
 

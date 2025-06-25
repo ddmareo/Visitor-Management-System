@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
+import { decryptBinary } from "@/utils/encryption";
 
 const prisma = new PrismaClient();
 
@@ -11,6 +12,11 @@ const visitCategoryMapping = {
   Working__Project___Repair_: "Working (Project & Repair)",
   VIP: "VIP",
 } as const;
+
+// Function to convert Buffer to Base64
+function bufferToBase64(buffer: Buffer): string {
+  return buffer.toString('base64');
+}
 
 export async function GET(
   _request: Request,
@@ -49,6 +55,7 @@ export async function GET(
                 company_name: true,
               },
             },
+            face_scan: true,
           },
         },
         employee: {
@@ -81,6 +88,20 @@ export async function GET(
         visit.visit_category as keyof typeof visitCategoryMapping
       ] || visit.visit_category;
 
+    // Process face scan - convert to base64 if it exists
+    let faceScanBase64 = null;
+    if (visit.visitor?.face_scan) {
+      // Assuming face_scan is stored as Buffer in the database
+      // If it's already encrypted, you'd need to decrypt it first
+      const faceScanBuffer = decryptBinary(visit.visitor.face_scan);
+
+      // Convert Buffer to Base64
+      faceScanBase64 = bufferToBase64(faceScanBuffer);
+      
+      // Create data URL format for use in image elements
+      faceScanBase64 = `data:image/jpeg;base64,${faceScanBase64}`;
+    }
+
     // Transform the visit data to match the expected format
     const transformedVisit = {
       ...visit,
@@ -91,6 +112,7 @@ export async function GET(
       company_institution: visit.visitor?.company?.company_name,
       team_members: visit.teammember.map((member) => member.member_name),
       visit_category: mappedCategory,
+      face_scan: faceScanBase64, // Now contains the base64 data URL
     };
 
     return new Response(JSON.stringify(transformedVisit), {

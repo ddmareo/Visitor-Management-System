@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
-import { QrCode, Search } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { QrCode, Search, Check } from "lucide-react";
 import QrScannerPopup from "./qrscannerwindow";
 import axios from "axios";
+import FaceScanModal from "./facescanmodal";
 
 interface VisitsData {
   visit_id: string;
@@ -24,6 +25,7 @@ interface VisitsData {
   brings_team: boolean;
   team_members_quantity?: number;
   team_members?: string;
+  face_scan: string;
 }
 
 const Page = () => {
@@ -33,6 +35,16 @@ const Page = () => {
   const [error, setError] = useState("");
   const [isCheckinIn, setIsCheckingIn] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+
+  const [showCamera, setShowCamera] = useState(false);
+  const [isVerified, setIsVerified] = useState(visitsData?.verification_status || false);
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  useEffect(() => {
+    if (visitsData) {
+      setIsVerified(visitsData.verification_status);
+    }
+  }, [visitsData]);
 
   const handleQrScanSuccess = (scannedUrl: string) => {
     setQrCode(scannedUrl);
@@ -62,6 +74,36 @@ const Page = () => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     handleSearch();
+  };
+
+  const handleOpenCamera = () => {
+    if (!visitsData?.face_scan) {
+      setError('No reference face scan available');
+      return;
+    }
+    setShowCamera(true);
+  };
+
+  const handleCloseCamera = () => {
+    setShowCamera(false);
+  };
+
+  const handleVerify = async () => {
+    if (!visitsData?.visit_id) return;
+
+    setIsVerifying(true);
+    setError("");
+
+    try {
+      await axios.put(`/api/visits/verify/${visitsData?.visit_id}`);
+      setIsVerified(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Verification failed");
+      setIsVerified(false);
+    } finally {
+      setIsVerifying(false);
+      await fetchVisitsData(qrCode);
+    }
   };
 
   const handleCheckIn = async () => {
@@ -449,8 +491,14 @@ const Page = () => {
             </div>
           </div>
 
+          {isVerified ? (
           <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
-            <div className="flex justify-end">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2 text-green-500">
+                <Check className="h-5 w-5" />
+                <span>Face Verified</span>
+              </div>
+              
               {!(visitsData.check_in_time && visitsData.check_out_time) && (
                 <button
                   className={`inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors ${
@@ -475,6 +523,27 @@ const Page = () => {
               )}
             </div>
           </div>
+          ) : (
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex justify-end items-center">
+                <button
+                  onClick={handleOpenCamera}
+                  disabled={isVerifying || !visitsData?.face_scan}
+                  className={`inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors ${
+                    isVerifying || !visitsData?.face_scan
+                      ? "opacity-50 cursor-not-allowed"
+                      : "bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 focus:ring-green-500"
+                  }`}
+                >
+                  {isVerifying ? (
+                    <span>Verifying...</span>
+                  ) : (
+                    <span>Verify Face</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -482,6 +551,15 @@ const Page = () => {
         <QrScannerPopup
           onClose={() => setShowQrScanner(false)}
           onScanSuccess={handleQrScanSuccess}
+        />
+      )}
+
+      {showCamera && (
+        <FaceScanModal
+          mode="verify"
+          onClose={() => handleCloseCamera()}
+          referenceImage={visitsData?.face_scan}
+          onVerificationComplete={handleVerify}
         />
       )}
 
